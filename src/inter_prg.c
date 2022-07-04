@@ -89,38 +89,35 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     double Cpd = 1004.65;
     double rho_w = 1025.0;  // density of water
 
-    double Cs_o_sunlit_old, Cs_o_shaded_old, Cs_u_sunlit_old, Cs_u_shaded_old;  // CO2 concentration on the surfaces of leaves
-    double Tc_o_sunlit_old, Tc_o_shaded_old, Tc_u_sunlit_old, Tc_u_shaded_old;  // the effective canopy temperature in K
+    Leaf Cc_new;  // CO2 concentration in the chloroplast
+    Leaf Cs_old;  // CO2 concentration on the surfaces of leaves
+    Leaf Cs_new;
+    Leaf Ci_old;  // intercellular CO2 concentration pn the leaf
+    Leaf Ci_new;
+    Leaf Tc_old;  // the effective canopy temperature in K
+    Leaf Tc_new;
+    Leaf Gs_old;  // stomatal conductance of the big leaf for water
+    Leaf Gs_new;
+    Leaf Gc;   // the total conductance for CO2 from the intercellular space of the leaves to the reference height above the canopy
+    Leaf Gw;   // the total conductance for water from the intercellular space of the leaves to the reference height above the canopy
+    Leaf Gww;  // the total conductance for water from the surface of the leaves to the reference height above the canopy
+    Leaf Gh;   // total conductance for heat transfer from the leaf surface to the reference height above the canopy
+    Leaf Ac;   // net photosynthesis rate
 
-    double Gs_o_sunlit_new, Gs_o_shaded_new, Gs_u_sunlit_new, Gs_u_shaded_new;  // stomatal conductance of the big leaf for water
-    double Gs_o_sunlit_old, Gs_o_shaded_old, Gs_u_sunlit_old, Gs_u_shaded_old;  // stomatal conductance of the big leaf for water
+    Leaf radiation;  // net radiation of leaves
+    Leaf R;          // Rabs, absorbed solar radiation
+    Leaf leleaf;     // leaf latent heat flux (mol m-2 s-1)
+    Leaf GPP, LAI;
+    Leaf PAI;  // PAI = LAI + SAI; // double LAI.o_sunlit, LAI.o_shaded, LAI.u_sunlit, LAI.u_shaded;
 
-    double Ac_o_sunlit, Ac_o_shaded, Ac_u_sunlit, Ac_u_shaded;                  // net photosynthesis rate
-    double Cs_o_sunlit_new, Cs_o_shaded_new, Cs_u_sunlit_new, Cs_u_shaded_new;  // CO2 concentration on the surfaces of leaves
-    double Ci_o_sunlit_new, Ci_o_shaded_new, Ci_u_sunlit_new, Ci_u_shaded_new;  // intercellular CO2 concentration pn the leaf
-    double Ci_o_sunlit_old, Ci_o_shaded_old, Ci_u_sunlit_old, Ci_u_shaded_old;  // intercellular CO2 concentration pn the leaf
-    double Cc_o_sunlit_new, Cc_o_shaded_new, Cc_u_sunlit_new, Cc_u_shaded_new;  // CO2 concentration in the chloroplast
-
-    double Tc_o_sunlit_new, Tc_o_shaded_new, Tc_u_sunlit_new, Tc_u_shaded_new;  // the effective canopy temperature in K
+    
     double f_soilwater;                                                         // an empirical parameter describing the relative availability of soil water for plants
-    double Gw_o_sunlit, Gw_o_shaded, Gw_u_sunlit, Gw_u_shaded;                  // the total conductance for water from the intercellular space of the leaves to the reference height above the canopy
-    double Gc_o_sunlit, Gc_o_shaded, Gc_u_sunlit, Gc_u_shaded;                  // the total conductance for CO2 from the intercellular space of the leaves to the reference height above the canopy
-    double Gww_o_sunlit, Gww_o_shaded, Gww_u_sunlit, Gww_u_shaded;              // the total conductance for water from the surface of the leaves to the reference height above the canopy
-    double Gh_o_sunlit, Gh_o_shaded, Gh_u_sunlit, Gh_u_shaded;                  // total conductance for heat transfer from the leaf surface to the reference height above the canopy
-
-    double psychrometer;
-    double R_o_sunlit, R_o_shaded, R_u_sunlit, R_u_shaded;  // solar radiation absorbed by sunlit, shaded leaves
-
+    double psychrometer = 0.066;
     double Tco, Tcu, slope;
     double H_o_sunlit, H_o_shaded;                                  // sensible heat flux from leaves
-    double LAI_o_sunlit, LAI_o_shaded, LAI_u_sunlit, LAI_u_shaded;  // stem_o,stem_u;
-    double LAIo_sunlit, LAIo_shaded, LAIu_sunlit, LAIu_shaded;
-    double radiation_o_sun, radiation_o_shaded;  // net radiation of leaves
-    double radiation_u_sun, radiation_u_shaded;
-    double GPP_o_sunlit, GPP_o_shaded, GPP_u_sunlit, GPP_u_shaded;
-
+    
     double VPS_air;
-    double GH_o, G_o_a, G_o_b, G_u_a, G_u_b;
+    double GH_o, Ga_o, Gb_o, Ga_u, Gb_u;
     double canopyh_o, canopyh_u;
 
     double VPD_air;  // Vapor pressure deficit term
@@ -133,10 +130,7 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     double m_h2o;  // the slope in BWB model
 
     // leaf latent heat flux (mol/m2/s)
-    double leleaf_o_sunlit;
-    double leleaf_o_shaded;
-    double leleaf_u_sunlit;
-    double leleaf_u_shaded;
+    // double leleaf.o_sunlit, leleaf.o_shaded, leleaf.u_sunlit, leleaf.u_shaded;
 
     // parameters for Vcmax-Nitrogen calculations
     double Kn = 0.3;  // 0.713/2.4
@@ -144,7 +138,6 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     double K, Vcmax0, Vcmax_sunlit, Vcmax_shaded, expr1, expr2, expr3;
     double slope_Vcmax_N, leaf_N, Jmax_sunlit, Jmax_shaded;
 
-    psychrometer = 0.066;
 
     alpha_sat = parameter[24];  // albedo of saturated/dry soil for module rainfall 1
     alpha_dry = parameter[25];  // the albedo of dry soil
@@ -194,9 +187,7 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
 
     // lai_calc module
     // separate lai into sunlit and shaded portions
-    lai2(stem_o, stem_u, landcover, CosZs, lai_o, clumping, lai_u, &LAIo_sunlit, &LAIo_shaded, &LAIu_sunlit,
-         &LAIu_shaded, &LAI_o_sunlit, &LAI_o_shaded, &LAI_u_sunlit, &LAI_u_shaded);
-
+    lai2(clumping, CosZs, stem_o, stem_u, lai_o, lai_u, &LAI, &PAI);
     /*****  Initialization of this time step  *****/
 
     Ks = meteo->Srad;
@@ -218,24 +209,13 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     }
 
     // Ground surface temperature
-    Ts0[0] = var_o[3];
-    if ((Ts0[0] - temp_air) > 2.0) Ts0[0] = temp_air + 2.0;
-    if ((Ts0[0] - temp_air) < -2.0) Ts0[0] = temp_air - 2.0;
-    Tsn0[0] = var_o[4];
-    if ((Tsn0[0] - temp_air) > 2.0) Tsn0[0] = temp_air + 2.0;
-    if ((Tsn0[0] - temp_air) < -2.0) Tsn0[0] = temp_air - 2.0;
-    Tsm0[0] = var_o[5];
-    if ((Tsm0[0] - temp_air) > 2.0) Tsm0[0] = temp_air + 2.0;
-    if ((Tsm0[0] - temp_air) < -2.0) Tsm0[0] = temp_air - 2.0;
-    Tsn1[0] = var_o[6];
-    if ((Tsn1[0] - temp_air) > 2.0) Tsn1[0] = temp_air + 2.0;
-    if ((Tsn1[0] - temp_air) < -2.0) Tsn1[0] = temp_air - 2.0;
-    Tsn2[0] = var_o[7];
-    if ((Tsn2[0] - temp_air) > 2.0) Tsn2[0] = temp_air + 2.0;
-    if ((Tsn2[0] - temp_air) < -2.0) Tsn2[0] = temp_air - 2.0;
-
+    Ts0[0]  = clamp(var_o[3], temp_air - 2.0, temp_air + 2.0);
+    Tsn0[0] = clamp(var_o[4], temp_air - 2.0, temp_air + 2.0);
+    Tsm0[0] = clamp(var_o[5], temp_air - 2.0, temp_air + 2.0);
+    Tsn1[0] = clamp(var_o[6], temp_air - 2.0, temp_air + 2.0);
+    Tsn2[0] = clamp(var_o[7], temp_air - 2.0, temp_air + 2.0);
+    
     Qhc_o[0] = var_o[11];
-
     Wcl_o[0] = var_o[15];
     Wcs_o[0] = var_o[16]; /* the mass of intercepted liquid water and snow, overstory */
 
@@ -257,10 +237,7 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     // Vcmax_Jmax(lai_o, clumping, Vcmax0,slope_Vcmax_N, leaf_N, CosZs, &Vcmax_sunlit, &Vcmax_shaded, &Jmax_sunlit, &Jmax_shaded);
 
     // temperatures of overstorey and understorey canopies
-    Tc_o_sunlit_old = temp_air - 0.5;
-    Tc_o_shaded_old = temp_air - 0.5;
-    Tc_u_sunlit_old = temp_air - 0.5;
-    Tc_u_shaded_old = temp_air - 0.5;
+    init_leaf_dbl(&Tc_old, temp_air - 0.5);
 
     /*****  Ten time intervals in a hourly time step->6min or 360s per loop  ******/
     for (kkk = 1; kkk <= kloop; kkk++) {
@@ -277,7 +254,6 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
         // Old version
         // if(thetam[0][kkk-1]<soilp->theta_vwp[1]*0.5) alpha_g = alpha_dry;
         // else alpha_g = (thetam[0][kkk-1]-soilp->theta_vwp[1]*0.5)/(soilp->fei[1]-soilp->theta_vwp[1]*0.5) * (alpha_sat - alpha_dry) + alpha_dry;
-
         if (soilp->thetam_prev[1] < soilp->theta_vwp[1] * 0.5)
             alpha_g = alpha_dry;
         else
@@ -303,14 +279,8 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
 
         slope = 2503.0 / pow((temp_air + 237.3), 2) * exp(17.27 * temp_air / (temp_air + 237.3));
 
-        Gs_o_sunlit_old = 1 / 200.0;
-        Ci_o_sunlit_old = 0.7 * CO2_air;
-        Gs_o_shaded_old = 1 / 200.0;
-        Ci_o_shaded_old = 0.7 * CO2_air;
-        Gs_u_sunlit_old = 1 / 300.0;
-        Ci_u_sunlit_old = 0.7 * CO2_air;
-        Gs_u_shaded_old = 1 / 300.0;
-        Ci_u_shaded_old = 0.7 * CO2_air;
+        init_leaf_dbl(&Ci_old, 0.7 * CO2_air);      // over- and under-store
+        init_leaf_dbl2(&Gs_old, 1 / 200.0, 1 / 300.0);  // over- and under-store
 
         percentArea_snow_o = Ac_snow_o[kkk] / lai_o / 2;
         percentArea_snow_u = Ac_snow_u[kkk] / lai_u / 2;
@@ -323,153 +293,137 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
             num = num + 1;
 
             /***** Aerodynamic_conductance module by G.Mo  *****/
-
             aerodynamic_conductance(canopyh_o, canopyh_u, height_wind_sp, clumping, temp_air, wind_sp, GH_o,
-                                    lai_o + stem_o, lai_u + stem_u, &ra_o, &ra_u, &ra_g, &G_o_a, &G_o_b, &G_u_a, &G_u_b);
+                                    lai_o + stem_o, lai_u + stem_u, &ra_o, &ra_u, &ra_g, &Ga_o, &Gb_o, &Ga_u, &Gb_u);
 
-            Gh_o_sunlit = 1.0 / (1.0 / G_o_a + 0.5 / G_o_b);  // heat conductance of sunlit leaves of overstorey
-            Gh_o_shaded = 1.0 / (1.0 / G_o_a + 0.5 / G_o_b);  // heat conductance of shaded leaves of overstorey
-            Gh_u_sunlit = 1.0 / (1.0 / G_u_a + 0.5 / G_u_b);  // heat conductance of sunlit leaves of understorey
-            Gh_u_shaded = 1.0 / (1.0 / G_u_a + 0.5 / G_u_b);  // heat conductance of shaded leaves of understorey
+            Gh.o_sunlit = 1.0 / (1.0 / Ga_o + 0.5 / Gb_o);  // heat conductance of sunlit leaves of overstorey
+            Gh.o_shaded = 1.0 / (1.0 / Ga_o + 0.5 / Gb_o);  // heat conductance of shaded leaves of overstorey
+            Gh.u_sunlit = 1.0 / (1.0 / Ga_u + 0.5 / Gb_u);  // heat conductance of sunlit leaves of understorey
+            Gh.u_shaded = 1.0 / (1.0 / Ga_u + 0.5 / Gb_u);  // heat conductance of shaded leaves of understorey
 
-            Gww_o_sunlit = 1.0 / (1.0 / G_o_a + 1.0 / G_o_b + 100);  // conductance for intercepted water of sunlit leaves of overstorey
-            Gww_o_shaded = 1.0 / (1.0 / G_o_a + 1.0 / G_o_b + 100);  // conductance for intercepted water of shaded leaves of overstorey
-            Gww_u_sunlit = 1.0 / (1.0 / G_u_a + 1.0 / G_u_b + 100);  // conductance for intercepted water of sunlit leaves of understorey
-            Gww_u_shaded = 1.0 / (1.0 / G_u_a + 1.0 / G_u_b + 100);  // conductance for intercepted water of shaded leaves of understorey
+            Gww.o_sunlit = 1.0 / (1.0 / Ga_o + 1.0 / Gb_o + 100);  // conductance for intercepted water of sunlit leaves of overstorey
+            Gww.o_shaded = 1.0 / (1.0 / Ga_o + 1.0 / Gb_o + 100);  // conductance for intercepted water of shaded leaves of overstorey
+            Gww.u_sunlit = 1.0 / (1.0 / Ga_u + 1.0 / Gb_u + 100);  // conductance for intercepted water of sunlit leaves of understorey
+            Gww.u_shaded = 1.0 / (1.0 / Ga_u + 1.0 / Gb_u + 100);  // conductance for intercepted water of shaded leaves of understorey
 
             // temperatures of overstorey and understorey canopies
-            Tco = (Tc_o_sunlit_old * LAI_o_sunlit + Tc_o_shaded_old * LAI_o_shaded) / (LAI_o_sunlit + LAI_o_shaded);
-            Tcu = (Tc_u_sunlit_old * LAI_u_sunlit + Tc_u_shaded_old * LAI_u_shaded) / (LAI_u_sunlit + LAI_u_shaded);
+            Tco = (Tc_old.o_sunlit * PAI.o_sunlit + Tc_old.o_shaded * PAI.o_shaded) / (PAI.o_sunlit + PAI.o_shaded);
+            Tcu = (Tc_old.u_sunlit * PAI.u_sunlit + Tc_old.u_shaded * PAI.u_shaded) / (PAI.u_sunlit + PAI.u_shaded);
 
             /*****  Net radiation at canopy and leaf level module by X.Luo  *****/
-
-            netRadiation(Ks, CosZs, Tco, Tcu, temp_grd, lai_o, lai_u, lai_o + stem_o, lai_u + stem_u, LAI_o_sunlit, LAI_o_shaded, LAI_u_sunlit, LAI_u_shaded,
-                         clumping, temp_air, rh_air, alpha_v_sw[kkk], alpha_n_sw[kkk], percentArea_snow_o, percentArea_snow_u,
+            netRadiation(Ks, CosZs, Tco, Tcu, temp_grd, lai_o, lai_u, lai_o + stem_o, lai_u + stem_u,
+                         PAI,
+                         clumping, temp_air, rh_air, alpha_v_sw[kkk], alpha_n_sw[kkk],
+                         percentArea_snow_o, percentArea_snow_u,
                          Xg_snow[kkk], alpha_v_o, alpha_n_o, alpha_v_u, alpha_n_u, alpha_v_g, alpha_n_g,
-                         &radiation_o, &radiation_u, &radiation_g, &radiation_o_sun, &radiation_o_shaded, &radiation_u_sun, &radiation_u_shaded,
-                         &R_o_sunlit, &R_o_shaded, &R_u_sunlit, &R_u_shaded);
+                         &radiation_o, &radiation_u, &radiation_g,
+                         &radiation, &R);
 
             /*****  Photosynthesis module by B. Chen  *****/
-
             // Four components: overstory sunlit and shaded, understory sunlit and shaded
-            Gw_o_sunlit = 1.0 / (1.0 / G_o_a + 1.0 / G_o_b + 1.0 / Gs_o_sunlit_old);  // conductance of sunlit leaves of overstorey for water
-            Gw_o_shaded = 1.0 / (1.0 / G_o_a + 1.0 / G_o_b + 1.0 / Gs_o_shaded_old);  // conductance of shaded leaves of overstorey for water
-            Gw_u_sunlit = 1.0 / (1.0 / G_u_a + 1.0 / G_u_b + 1.0 / Gs_u_sunlit_old);  // conductance of sunlit leaves of understorey for water
-            Gw_u_shaded = 1.0 / (1.0 / G_u_a + 1.0 / G_u_b + 1.0 / Gs_u_shaded_old);  // conductance of shaded leaves of understorey for water
+            Gw.o_sunlit = 1.0 / (1.0 / Ga_o + 1.0 / Gb_o + 1.0 / Gs_old.o_sunlit);  // conductance of sunlit leaves of overstorey for water
+            Gw.o_shaded = 1.0 / (1.0 / Ga_o + 1.0 / Gb_o + 1.0 / Gs_old.o_shaded);  // conductance of shaded leaves of overstorey for water
+            Gw.u_sunlit = 1.0 / (1.0 / Ga_u + 1.0 / Gb_u + 1.0 / Gs_old.u_sunlit);  // conductance of sunlit leaves of understorey for water
+            Gw.u_shaded = 1.0 / (1.0 / Ga_u + 1.0 / Gb_u + 1.0 / Gs_old.u_shaded);  // conductance of shaded leaves of understorey for water
 
-            leleaf_o_sunlit = Gw_o_sunlit * (VPD_air + slope * (Tc_o_sunlit_old - temp_air)) * rho_a * Cp_ca / psychrometer;
-            leleaf_o_shaded = Gw_o_shaded * (VPD_air + slope * (Tc_o_shaded_old - temp_air)) * rho_a * Cp_ca / psychrometer;
-            leleaf_u_sunlit = Gw_u_sunlit * (VPD_air + slope * (Tc_u_sunlit_old - temp_air)) * rho_a * Cp_ca / psychrometer;
-            leleaf_u_shaded = Gw_u_shaded * (VPD_air + slope * (Tc_u_shaded_old - temp_air)) * rho_a * Cp_ca / psychrometer;
+            leleaf.o_sunlit = Gw.o_sunlit * (VPD_air + slope * (Tc_old.o_sunlit - temp_air)) * rho_a * Cp_ca / psychrometer;
+            leleaf.o_shaded = Gw.o_shaded * (VPD_air + slope * (Tc_old.o_shaded - temp_air)) * rho_a * Cp_ca / psychrometer;
+            leleaf.u_sunlit = Gw.u_sunlit * (VPD_air + slope * (Tc_old.u_sunlit - temp_air)) * rho_a * Cp_ca / psychrometer;
+            leleaf.u_shaded = Gw.u_shaded * (VPD_air + slope * (Tc_old.u_shaded - temp_air)) * rho_a * Cp_ca / psychrometer;
 
             if (CosZs > 0) {
-                photosynthesis(Tc_o_sunlit_old, R_o_sunlit, e_a10, G_o_b, Vcmax_sunlit, f_soilwater, b_h2o, m_h2o, Ci_o_sunlit_old,
-                               temp_air, leleaf_o_sunlit, &Gs_o_sunlit_new, &Ac_o_sunlit, &Ci_o_sunlit_new);
-                photosynthesis(Tc_o_shaded_old, R_o_shaded, e_a10, G_o_b, Vcmax_shaded, f_soilwater, b_h2o, m_h2o, Ci_o_shaded_old,
-                               temp_air, leleaf_o_shaded, &Gs_o_shaded_new, &Ac_o_shaded, &Ci_o_shaded_new);
-                photosynthesis(Tc_u_sunlit_old, R_u_sunlit, e_a10, G_u_b, Vcmax_sunlit, f_soilwater, b_h2o, m_h2o, Ci_u_sunlit_old,
-                               temp_air, leleaf_u_sunlit, &Gs_u_sunlit_new, &Ac_u_sunlit, &Ci_u_sunlit_new);
-                photosynthesis(Tc_u_shaded_old, R_u_shaded, e_a10, G_u_b, Vcmax_shaded, f_soilwater, b_h2o, m_h2o, Ci_u_shaded_old,
-                               temp_air, leleaf_u_shaded, &Gs_u_shaded_new, &Ac_u_shaded, &Ci_u_shaded_new);
+                photosynthesis(Tc_old.o_sunlit, R.o_sunlit, e_a10, Gb_o, Vcmax_sunlit, f_soilwater, b_h2o, m_h2o, Ci_old.o_sunlit,
+                               temp_air, leleaf.o_sunlit, &Gs_new.o_sunlit, &Ac.o_sunlit, &Ci_new.o_sunlit);
+                photosynthesis(Tc_old.o_shaded, R.o_shaded, e_a10, Gb_o, Vcmax_shaded, f_soilwater, b_h2o, m_h2o, Ci_old.o_shaded,
+                               temp_air, leleaf.o_shaded, &Gs_new.o_shaded, &Ac.o_shaded, &Ci_new.o_shaded);
+                photosynthesis(Tc_old.u_sunlit, R.u_sunlit, e_a10, Gb_u, Vcmax_sunlit, f_soilwater, b_h2o, m_h2o, Ci_old.u_sunlit,
+                               temp_air, leleaf.u_sunlit, &Gs_new.u_sunlit, &Ac.u_sunlit, &Ci_new.u_sunlit);
+                photosynthesis(Tc_old.u_shaded, R.u_shaded, e_a10, Gb_u, Vcmax_shaded, f_soilwater, b_h2o, m_h2o, Ci_old.u_shaded,
+                               temp_air, leleaf.u_shaded, &Gs_new.u_shaded, &Ac.u_shaded, &Ci_new.u_shaded);
             } else {
-                Gs_o_sunlit_new = 0.0001;
-                Ac_o_sunlit = 0.0;
-                Ci_o_sunlit_new = CO2_air * 0.7;
-                Cs_o_sunlit_new = CO2_air;
-                Cc_o_sunlit_new = CO2_air * 0.7 * 0.8;
-
-                Gs_o_shaded_new = 0.0001;
-                Ac_o_shaded = 0.0;
-                Ci_o_shaded_new = CO2_air * 0.7;
-                Cs_o_shaded_new = CO2_air;
-                Cc_o_shaded_new = CO2_air * 0.7 * 0.8;
-
-                Gs_u_sunlit_new = 0.0001;
-                Ac_u_sunlit = 0.0;
-                Ci_u_sunlit_new = CO2_air * 0.7;
-                Cs_u_sunlit_new = CO2_air;
-                Cc_u_sunlit_new = CO2_air * 0.7 * 0.8;
-
-                Gs_u_shaded_new = 0.0001;
-                Ac_u_shaded = 0.0;
-                Ci_u_shaded_new = CO2_air * 0.7;
-                Cs_u_shaded_new = CO2_air;
-                Cc_u_shaded_new = CO2_air * 0.7 * 0.8;
+                init_leaf_dbl(&Gs_new, 0.0001);
+                init_leaf_dbl(&Ac, 0.0);
+                init_leaf_dbl(&Cs_new, CO2_air);
+                init_leaf_dbl(&Ci_new, CO2_air * 0.7);
+                init_leaf_dbl(&Cc_new, CO2_air * 0.7 * 0.8);  // not used
             }
 
-            Ci_o_sunlit_old = Ci_o_sunlit_new;
-            Cs_o_sunlit_old = Cs_o_sunlit_new;
-            Gs_o_sunlit_old = Gs_o_sunlit_new;                                        // m/s
-            Gw_o_sunlit = 1.0 / (1.0 / G_o_a + 1.0 / G_o_b + 1.0 / Gs_o_sunlit_new);  // conductance of sunlit leaves of overstorey for water
-            Gc_o_sunlit = 1.0 / (1.0 / G_o_a + 1.4 / G_o_b + 1.6 / Gs_o_sunlit_new);  // conductance of sunlit leaves of overstorey for CO2
+            // init_leaf_struct(&Ci_old, Ci_new);
+            // init_leaf_struct(&Cs_old, Cs_new);
+            // init_leaf_struct(&Gs_old, Gs_new);  // m/s
+            
+            Ci_old.o_sunlit = Ci_new.o_sunlit;
+            Cs_old.o_sunlit = Cs_new.o_sunlit;
+            Gs_old.o_sunlit = Gs_new.o_sunlit;                                        // m/s
 
-            Ci_o_shaded_old = Ci_o_shaded_new;
-            Cs_o_shaded_old = Cs_o_shaded_new;
-            Gs_o_shaded_old = Gs_o_shaded_new;                                        // m/s
-            Gw_o_shaded = 1.0 / (1.0 / G_o_a + 1.0 / G_o_b + 1.0 / Gs_o_shaded_new);  // conductance of sunlit leaves of overstorey for water
-            Gc_o_shaded = 1.0 / (1.0 / G_o_a + 1.4 / G_o_b + 1.6 / Gs_o_shaded_new);  // conductance of sunlit leaves of overstorey for CO2
+            Ci_old.o_shaded = Ci_new.o_shaded;
+            Cs_old.o_shaded = Cs_new.o_shaded;
+            Gs_old.o_shaded = Gs_new.o_shaded;  // m/s
 
-            Ci_u_sunlit_old = Ci_o_sunlit_new;
-            Cs_u_sunlit_old = Cs_u_sunlit_new;
-            Gs_u_sunlit_old = Gs_o_sunlit_new;                                        // m/s
-            Gw_u_sunlit = 1.0 / (1.0 / G_u_a + 1.0 / G_u_b + 1.0 / Gs_u_sunlit_new);  // conductance of sunlit leaves of overstorey for water
-            Gc_u_sunlit = 1.0 / (1.0 / G_u_a + 1.4 / G_u_b + 1.6 / Gs_u_sunlit_new);  // conductance of sunlit leaves of overstorey for CO2
+            // note error at here, kongdd, v20220705
+            Ci_old.u_sunlit = Ci_new.o_sunlit;
+            Cs_old.u_sunlit = Cs_new.u_sunlit;
+            Gs_old.u_sunlit = Gs_new.o_sunlit;  // m/s
 
-            Ci_u_shaded_old = Ci_u_shaded_new;
-            Cs_u_shaded_old = Cs_u_shaded_new;
-            Gs_u_shaded_old = Gs_u_shaded_new;                                        // m/s
-            Gw_u_shaded = 1.0 / (1.0 / G_u_a + 1.0 / G_u_b + 1.0 / Gs_u_shaded_new);  // conductance of sunlit leaves of overstorey for water
-            Gc_u_shaded = 1.0 / (1.0 / G_u_a + 1.4 / G_u_b + 1.6 / Gs_u_shaded_new);  // conductance of sunlit leaves of overstorey for CO2
+            Ci_old.u_shaded = Ci_new.u_shaded;
+            Cs_old.u_shaded = Cs_new.u_shaded;
+            Gs_old.u_shaded = Gs_new.u_shaded;  // m/s
 
+            Gw.o_sunlit = 1.0 / (1.0 / Ga_o + 1.0 / Gb_o + 1.0 / Gs_new.o_sunlit);  // conductance of sunlit leaves of overstorey for water
+            Gw.o_shaded = 1.0 / (1.0 / Ga_o + 1.0 / Gb_o + 1.0 / Gs_new.o_shaded);  // conductance of sunlit leaves of overstorey for water
+            Gw.u_sunlit = 1.0 / (1.0 / Ga_u + 1.0 / Gb_u + 1.0 / Gs_new.u_sunlit);  // conductance of sunlit leaves of overstorey for water
+            Gw.u_shaded = 1.0 / (1.0 / Ga_u + 1.0 / Gb_u + 1.0 / Gs_new.u_shaded);  // conductance of sunlit leaves of overstorey for water
+
+            Gc.o_sunlit = 1.0 / (1.0 / Ga_o + 1.4 / Gb_o + 1.6 / Gs_new.o_sunlit);  // conductance of sunlit leaves of overstorey for CO2
+            Gc.o_shaded = 1.0 / (1.0 / Ga_o + 1.4 / Gb_o + 1.6 / Gs_new.o_shaded);  // conductance of sunlit leaves of overstorey for CO2
+            Gc.u_sunlit = 1.0 / (1.0 / Ga_u + 1.4 / Gb_u + 1.6 / Gs_new.u_sunlit);  // conductance of sunlit leaves of overstorey for CO2
+            Gc.u_shaded = 1.0 / (1.0 / Ga_u + 1.4 / Gb_u + 1.6 / Gs_new.u_shaded);  // conductance of sunlit leaves of overstorey for CO2
+            
             /***** Leaf temperatures module by L. He  *****/
+            Leaf_Temperatures(temp_air, slope, psychrometer, VPD_air, Cp_ca,
+                              Gw, Gww, Gh,
+                              Xcs_o[kkk], Xcl_o[kkk], Xcs_u[kkk], Xcl_u[kkk],
+                              radiation,
+                              &Tc_new);
 
-            Leaf_Temperatures(temp_air, slope, psychrometer, VPD_air, Cp_ca, Gw_o_sunlit, Gw_o_shaded, Gw_u_sunlit, Gw_u_shaded,
-                              Gww_o_sunlit, Gww_o_shaded, Gww_u_sunlit, Gww_u_shaded, Gh_o_sunlit, Gh_o_shaded, Gh_u_sunlit, Gh_u_shaded,
-                              Xcs_o[kkk], Xcl_o[kkk], Xcs_u[kkk], Xcl_u[kkk], radiation_o_sun, radiation_o_shaded, radiation_u_sun, radiation_u_shaded,
-                              &Tc_o_sunlit_new, &Tc_o_shaded_new, &Tc_u_sunlit_new, &Tc_u_shaded_new);
+            H_o_sunlit = (Tc_new.o_sunlit - temp_air) * rho_a * Cp_ca * Gh.o_sunlit;
+            H_o_shaded = (Tc_new.o_shaded - temp_air) * rho_a * Cp_ca * Gh.o_shaded;
+            GH_o = H_o_sunlit * PAI.o_sunlit + H_o_shaded * PAI.o_shaded;  // for next num aerodynamic conductance calculation
 
-            H_o_sunlit = (Tc_o_sunlit_new - temp_air) * rho_a * Cp_ca * Gh_o_sunlit;
-            H_o_shaded = (Tc_o_shaded_new - temp_air) * rho_a * Cp_ca * Gh_o_shaded;
-            GH_o = H_o_sunlit * LAI_o_sunlit + H_o_shaded * LAI_o_shaded;  // for next num aerodynamic conductance calculation
-
-            if (fabs(Tc_o_sunlit_new - Tc_o_sunlit_old) < 0.02 && fabs(Tc_o_shaded_new - Tc_o_shaded_old) < 0.02 &&
-                fabs(Tc_u_sunlit_new - Tc_u_sunlit_old) < 0.02 && fabs(Tc_u_shaded_new - Tc_u_shaded_old) < 0.02)
+            if (fabs(Tc_new.o_sunlit - Tc_old.o_sunlit) < 0.02 && fabs(Tc_new.o_shaded - Tc_old.o_shaded) < 0.02 &&
+                fabs(Tc_new.u_sunlit - Tc_old.u_sunlit) < 0.02 && fabs(Tc_new.u_shaded - Tc_old.u_shaded) < 0.02)
 
                 break;          // break the iteration if results converge
             else if (num > 22)  // if the iteration does not converge
             {
-                Tc_o_sunlit_old = temp_air;
-                Tc_o_shaded_old = temp_air;
-                Tc_u_sunlit_old = temp_air;
-                Tc_u_shaded_old = temp_air;
+                init_leaf_dbl(&Tc_old, temp_air);
                 break;
             } else {
-                Tc_o_sunlit_old = Tc_o_sunlit_new;
-                Tc_o_shaded_old = Tc_o_shaded_new;
-                Tc_u_sunlit_old = Tc_u_sunlit_new;
-                Tc_u_shaded_old = Tc_u_shaded_new;
+                init_leaf_struct(&Tc_old, Tc_new);
             }
 
         }  // end of while
 
-        GPP_o_sunlit = Ac_o_sunlit * LAIo_sunlit;
-        GPP_o_shaded = Ac_o_shaded * LAIo_shaded;
-        GPP_u_sunlit = Ac_u_sunlit * LAIu_sunlit;
-        GPP_u_shaded = Ac_u_shaded * LAIu_shaded;
+        GPP.o_sunlit = Ac.o_sunlit * LAI.o_sunlit;
+        GPP.o_shaded = Ac.o_shaded * LAI.o_shaded;
+        GPP.u_sunlit = Ac.u_sunlit * LAI.u_sunlit;
+        GPP.u_shaded = Ac.u_shaded * LAI.u_shaded;
 
         /*****  Transpiration module by X. Luo  *****/
-
-        transpiration(Tc_o_sunlit_new, Tc_o_shaded_new, Tc_u_sunlit_new, Tc_u_shaded_new, temp_air, rh_air,
-                      Gw_o_sunlit, Gw_o_shaded, Gw_u_sunlit, Gw_u_shaded, LAIo_sunlit, LAIo_shaded, LAIu_sunlit, LAIu_shaded,
-                      &Trans_o[kkk], &Trans_u[kkk]);
+        // transpiration(Tc_new.o_sunlit, Tc_new.o_shaded, Tc_new.u_sunlit, Tc_new.u_shaded, temp_air, rh_air,
+        //               Gw.o_sunlit, Gw.o_shaded, Gw.u_sunlit, Gw.u_shaded, LAI.o_sunlit, LAI.o_shaded, LAI.u_sunlit, LAI.u_shaded,
+        //               &Trans_o[kkk], &Trans_u[kkk]);
+        transpiration(
+            Tc_new, temp_air, rh_air,
+            Gw, LAI,
+            &Trans_o[kkk], &Trans_u[kkk]);
 
         /*****  Evaporation and sublimation from canopy by X. Luo  *****/
-
-        evaporation_canopy(Tc_o_sunlit_new, Tc_o_shaded_new, Tc_u_sunlit_new, Tc_u_shaded_new, temp_air, rh_air,
-                           Gww_o_sunlit, Gww_o_shaded, Gww_u_sunlit, Gww_u_shaded,
-                           LAI_o_sunlit, LAI_o_shaded, LAI_u_sunlit, LAI_u_shaded,
-                           Xcl_o[kkk], Xcl_u[kkk], Xcs_o[kkk], Xcs_u[kkk],
-                           &Eil_o[kkk], &Eil_u[kkk], &EiS_o[kkk], &EiS_u[kkk]);
+        evaporation_canopy(
+            Tc_new, temp_air, rh_air,
+            Gww, PAI,
+            Xcl_o[kkk], Xcl_u[kkk], Xcs_o[kkk], Xcs_u[kkk],
+            &Eil_o[kkk], &Eil_u[kkk], &EiS_o[kkk], &EiS_u[kkk]);
 
         /*****  Rainfall stage 2 by X. Luo  *****/
 
@@ -488,13 +442,10 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
                          &Evap_soil[kkk], &Evap_SW[kkk], &Evap_SS[kkk]);
 
         /*****  Soil Thermal Conductivity module by L. He  *****/
-
         UpdateSoilThermalConductivity(soilp);
-
         Update_Cs(soilp);
 
         /*****  Surface temperature by X. Luo  *****/
-
         Cs[0][kkk] = soilp->Cs[0];  // added
         Cs[1][kkk] = soilp->Cs[0];
         Tc_u[kkk] = Tcu;  // added
@@ -517,15 +468,11 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
         soilp->temp_soil_c[0] = Tm[0][kkk];
 
         /*****  Snow Pack Stage 3 module by X. Luo  *****/
-
         snowpack_stage3(temp_air, Tsn0[kkk], Tsn0[kkk - 1], rho_snow[kkk], &Zsp, &Zp, &Wg_snow[kkk]);
 
         /*****  Sensible heat flux module by X. Luo  *****/
-
-        sensible_heat(Tc_o_sunlit_new, Tc_o_shaded_new, Tc_u_sunlit_new, Tc_u_shaded_new, Ts0[kkk], temp_air, rh_air,
-                      Gh_o_sunlit, Gh_o_shaded, Gh_u_sunlit, Gh_u_shaded, Gheat_g,
-                      LAI_o_sunlit, LAI_o_shaded, LAI_u_sunlit, LAI_u_shaded,
-                      &Qhc_o[kkk], &Qhc_u[kkk], &Qhg[kkk]);
+        sensible_heat(Tc_new, Ts0[kkk], temp_air, rh_air,
+                      Gh, Gheat_g, PAI, &Qhc_o[kkk], &Qhc_u[kkk], &Qhg[kkk]);
 
         /*****  Soil water module by L. He  *****/
         // in-process value check
@@ -537,25 +484,23 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
         soilp->G[0] = G[0][kkk];
 
         UpdateHeatFlux(soilp, Xg_snow[kkk], lambda_snow[kkk], Tsn0[kkk], temp_air, kstep);
-
         Soil_Water_Uptake(soilp, Trans_o[kkk], Trans_u[kkk], Evap_soil[kkk]);
 
         soilp->r_rain_g = r_rain_g[kkk];
         soilp->Zp = Zp;
 
         UpdateSoilMoisture(soilp, kstep);
-
         Zp = soilp->Zp;
-
     }  // The end of kkk loop
 
     kkk = kloop;  // the last step
 
-    if (Tsn1[kkk] > 40) Tsn2[kkk] = 40;
-    if (Tsn1[kkk] < -40) Tsn2[kkk] = -40;
-
-    if (Tsn2[kkk] > 40) Tsn2[kkk] = 40;
-    if (Tsn2[kkk] < -40) Tsn2[kkk] = -40;
+    Tsn1[kkk] = clamp(Tsn1[kkk], -40., 40.);
+    Tsn2[kkk] = clamp(Tsn2[kkk], -40., 40.);
+    // if (Tsn1[kkk] > 40) Tsn2[kkk] = 40;
+    // if (Tsn1[kkk] < -40) Tsn2[kkk] = -40;
+    // if (Tsn2[kkk] > 40) Tsn2[kkk] = 40;
+    // if (Tsn2[kkk] < -40) Tsn2[kkk] = -40;
 
     var_n[3] = Ts0[kkk];   // To: The temperature of ground surface
     var_n[4] = Tsn0[kkk];  // To: The temperature of ground surface
@@ -564,10 +509,8 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     var_n[7] = Tsn2[kkk];  // To: The temperature of ground surface
 
     var_n[11] = Qhc_o[kkk];
-
     var_n[15] = Wcl_o[kkk];
     var_n[16] = Wcs_o[kkk];  // the mass of intercepted liquid water and snow, overstory
-
     var_n[18] = Wcl_u[kkk];
     var_n[19] = Wcs_u[kkk];    // the mass of intercepted liquid water and snow, overstory
     var_n[20] = Wg_snow[kkk];  // the fraction of ground surface covered by snow and snow mass
@@ -575,22 +518,19 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     Lv_liquid = (2.501 - 0.00237 * temp_air) * 1000000;  // The latent heat of water vaporization in j/kg
 
     mid_res->Net_Rad = radiation_o + radiation_u + radiation_g;
-
     mid_res->LH = Lv_liquid * (Trans_o[kkk] + Eil_o[kkk] + Trans_u[kkk] + Eil_u[kkk] + Evap_soil[kkk] + Evap_SW[kkk]) + Lv_solid * (EiS_o[kkk] + EiS_u[kkk] + Evap_SS[kkk]);
     //  LH:  total latent heat flux
-
     mid_res->SH = Qhc_o[kkk] + Qhc_u[kkk] + Qhg[kkk];  // SH: total sensible heat flux
 
     mid_res->Trans = (Trans_o[kkk] + Trans_u[kkk]) * step;                                                                      // total transpiration  mm/step
     mid_res->Evap = (Eil_o[kkk] + Eil_u[kkk] + Evap_soil[kkk] + Evap_SW[kkk] + EiS_o[kkk] + EiS_u[kkk] + Evap_SS[kkk]) * step;  // total evaporation -> mm/step
 
-    mid_res->gpp_o_sunlit = GPP_o_sunlit;  // umol C/m2/s
-    mid_res->gpp_u_sunlit = GPP_u_sunlit;
-    mid_res->gpp_o_shaded = GPP_o_shaded;
-    mid_res->gpp_u_shaded = GPP_u_shaded;
+    mid_res->gpp_o_sunlit = GPP.o_sunlit;  // umol C/m2/s
+    mid_res->gpp_u_sunlit = GPP.u_sunlit;
+    mid_res->gpp_o_shaded = GPP.o_shaded;
+    mid_res->gpp_u_shaded = GPP.u_shaded;
 
     // total GPP -> gC/m2/step
-    mid_res->GPP = (GPP_o_sunlit + GPP_o_shaded + GPP_u_sunlit + GPP_u_shaded) * 12 * step * 0.000001;
-
+    mid_res->GPP = (GPP.o_sunlit + GPP.o_shaded + GPP.u_sunlit + GPP.u_shaded) * 12 * step * 0.000001;
     return;
 }

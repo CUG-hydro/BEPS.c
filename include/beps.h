@@ -6,10 +6,12 @@
 /// @author Written by: J. Liu, Modified by:  G. Mo
 /// @date June 2015
 
+#include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <string.h>
+
 #include "soil.h"
 
 /// @brief Define Constants
@@ -98,9 +100,12 @@ typedef struct {
 // Leaf Leaf_default = {0, 0, 0, 0};
 // #define LEAF(...) ((Leaf){.x = 0, .y = 0, ##__VA_ARGS__})
 
-void init_leaf_struct(Leaf* x, Leaf* replacement);
+void init_leaf_struct(Leaf* x, Leaf replacement);
 void init_leaf_dbl(Leaf* x, double replacement);
 void init_leaf_dbl2(Leaf* x, double overstory, double understory);
+
+Leaf leaf_mul(Leaf x, Leaf y);
+double leaf_sum(Leaf x);
 
 /// @brief Declare functions
 // void readconf();
@@ -108,6 +113,8 @@ void init_leaf_dbl2(Leaf* x, double overstory, double understory);
 // void readinput1();
 // void readlai_d();
 // void readlonlat();
+
+double clamp(double x, double low, double high);
 
 void inter_prg(int jday,int rstep,double lai,double clumping,double parameter[],struct climatedata* meteo,
                  double CosZs,double var_o[],double var_n[],struct Soil* soilp,struct results* mid_res);
@@ -123,25 +130,14 @@ void Vcmax_Jmax(double lai_o, double clumping, double Vcmax0,
                 double slope_Vcmax_N, double leaf_N, double CosZs,
                 double *Vcmax_sunlit, double *Vcmax_shaded, double *Jmax_sunlit, double *Jmax_shaded);
 
-void netRadiation(double shortRad_global, double CosZs, double temp_o, double temp_u, double temp_g,
-                  double lai_o, double lai_u, double lai_os, double lai_us,
-                  double lai_o_sunlit, double lai_o_shaded, double lai_u_sunlit, double lai_u_shaded,
-                  double clumping, double temp_air, double rh,
-                  double albedo_snow_v, double albedo_snow_n, double percentArea_snow_o, double percentArea_snow_u, double percent_snow_g,
-                  double albedo_v_o, double albedo_n_o, double albedo_v_u, double albedo_n_u, double albedo_v_g, double albedo_n_g,
-                  double* netRad_o, double* netRad_u, double* netRad_g,
-                  double* netRadLeaf_o_sunlit, double* netRadLeaf_o_shaded, double* netRadLeaf_u_sunlit, double* netRadLeaf_u_shaded,
-                  double* netShortRadLeaf_o_sunlit, double* netShortRadLeaf_o_shaded, double* netShortRadLeaf_u_sunlit, double* netShortRadLeaf_u_shaded);
-
 void soilresp(double* Ccd, double* Cssd, double* Csmd, double* Cfsd, double* Cfmd,
               double* Csm, double* Cm, double* Cs, double* Cp, float npp_yr, double* coef,
               int soiltype, struct Soil* soilp,struct results* mid_res);
 
 void readparam(short lc, double parameter1[]);
 
-void lai2(double stem_o,double stem_u,int LC,double CosZs,double lai_o,double clumping,double lai_u,
-          double* lai_o_sunlit,double* lai_o_shaded,double* lai_u_sunlit,double* lai_u_shaded,
-          double* PAI_o_sunlit,double* PAI_o_shaded,double* PAI_u_sunlit,double* PAI_u_shaded);
+void lai2(double clumping, double CosZs, double stem_o, double stem_u, double lai_o, double lai_u,
+          Leaf* LAI, Leaf* PAI);
 
 void readcoef(short lc, int stxt, double coef[]);
 
@@ -151,35 +147,42 @@ void photosynthesis(double temp_leaf_p,double rad_leaf, double e_air, double g_l
                     double f_soilwater,double b_h2o, double m_h2o, double cii,double temp_leaf_c,double LH_leaf,
                     double* Gs_w, double* aphoto, double* ci);
 void soil_water_factor();
+
+/** using Leaf struct */
+void netRadiation(double shortRad_global, double CosZs, double temp_o, double temp_u, double temp_g,
+                  double lai_o, double lai_u, double lai_os, double lai_us,  // LAI of overstorey and understorey, with and without stem
+                  Leaf lai,
+                  double clumping, double temp_air, double rh,
+                  double albedo_snow_v, double albedo_snow_n, double percentArea_snow_o, double percentArea_snow_u, double percent_snow_g,
+                  double albedo_v_o, double albedo_n_o, double albedo_v_u, double albedo_n_u, double albedo_v_g, double albedo_n_g,
+                  double* netRad_o, double* netRad_u, double* netRad_g,
+                  Leaf* netRadLeaf,
+                  Leaf* netShortRadLeaf);
+
 void Leaf_Temperatures(double Tair, double slope, double psychrometer, double VPD_air, double Cp_ca,
-                       double Gw_o_sunlit, double Gw_o_shaded, double Gw_u_sunlit, double Gw_u_shaded,
-                       double Gww_o_sunlit, double Gww_o_shaded, double Gww_u_sunlit, double Gww_u_shaded,
-                       double Gh_o_sunlit, double Gh_o_shaded, double Gh_u_sunlit, double Gh_u_shaded,
+                       Leaf Gw, Leaf Gww, Leaf Gh,
                        double Xcs_o, double Xcl_o, double Xcs_u, double Xcl_u,
-                       double radiation_o_sun, double radiation_o_shaded, double radiation_u_sun, double radiation_u_shaded,
-                       double *Tc_o_sunlit, double *Tc_o_shaded, double *Tc_u_sunlit, double *Tc_u_shaded);
-
+                       Leaf radiation, Leaf* Tc);
 double Leaf_Temperature(double Tair, double slope, double psychrometer, double VPD_air, double Cp_ca,
-                        double Gw, double Gww, double Gh, double Xcs, double Xcl, double radiation);
+                        double Gw, double Gww, double Gh, double Xc_sl, double radiation, bool constrain);
 
-void sensible_heat(double tempL_o_sunlit, double tempL_o_shaded, double tempL_u_sunlit, double tempL_u_shaded,
-                   double temp_g, double temp_air, double rh_air,
-                   double Gheat_o_sunlit, double Gheat_o_shaded, double Gheat_u_sunlit, double Gheat_u_shaded, double Gheat_g,
-                   double lai_o_sunlit, double lai_o_shaded, double lai_u_sunlit, double lai_u_shaded,
-                   double* SH_o, double* SH_u, double* SH_g);
+void sensible_heat(
+    Leaf tempL, double temp_g, double temp_air, double rh_air,
+    Leaf Gheat, double Gheat_g, Leaf lai,
+    double* SH_o, double* SH_u, double* SH_g);
 
-void transpiration(double tempL_o_sunlit, double tempL_o_shaded, double tempL_u_sunlit, double tempL_u_shaded,
-                   double temp_air, double rh_air,
-                   double Gtrans_o_sunlit, double Gtrans_o_shaded, double Gtrans_u_sunlit, double Gtrans_u_shaded,
-                   double lai_o_sunlit, double lai_o_shaded, double lai_u_sunlit, double lai_u_shaded,
+void transpiration(Leaf tempL, double temp_air, double rh_air,
+                   Leaf Gtrans, Leaf lai,
                    double* trans_o, double* trans_u);
 
-void evaporation_canopy(double tempL_o_sunlit, double tempL_o_shaded, double tempL_u_sunlit, double tempL_u_shaded,
-                        double temp_air, double rh_air,
-                        double Gwater_o_sunlit, double Gwater_o_shaded, double Gwater_u_sunlit, double Gwater_u_shaded,
-                        double lai_o_sunlit, double lai_o_shaded, double lai_u_sunlit, double lai_u_shaded,
-                        double percent_water_o, double percent_water_u, double percent_snow_o, double percent_snow_u,
-                        double* evapo_water_o, double* evapo_water_u, double* evapo_snow_o, double* evapo_snow_u);
+void evaporation_canopy(
+    Leaf tempL, double temp_air, double rh_air,
+    Leaf Gwater, Leaf lai,
+    double percent_water_o, double percent_water_u, double percent_snow_o, double percent_snow_u,
+    double* evapo_water_o, double* evapo_water_u, double* evapo_snow_o, double* evapo_snow_u);
+
+/** end of Leaf struct usage */
+
 
 void evaporation_soil(double temp_air, double temp_g, double rh_air, double netRad_g, double Gheat_g,
                       double* percent_snow_g,double* depth_water, double* depth_snow, double* mass_water_g, double* mass_snow_g,
