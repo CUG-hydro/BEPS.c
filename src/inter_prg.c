@@ -32,47 +32,47 @@ void inter_prg(int jday,int rstep,double lai,double clumping,double parameter[],
     double Zp,Zp1=0,Zp2=0;                    // depth of pounded water on the surface
     double height_wind_sp;                    // height of the Va measured for calculation of L
 
-	double Qhc_o[120],Qhc_u[120],Qhg[120];    // The sensible heat flux from canopy and ground
-	double G[layer+2][120];                   // the heat flux into the canopy of over story --in W/m^2
+    double Qhc_o[120] = {0}, Qhc_u[120] = {0}, Qhg[120] = {0};  // The sensible heat flux from canopy and ground
+    double G[layer + 2][120] = {0};                             // the heat flux into the canopy of over story --in W/m^2
 
-	double Wcl_o[120],Wcs_o[120];             // the masses od rain and snow on the canopy
-	double Xcl_o[120],Xcs_o[120];             // the fraction of canopy covered by liquid water and snow
-	double Wcl_u[120],Wcs_u[120];             // the masses of rain and snow on the canopy
-	double Xcl_u[120],Xcs_u[120];             // the fraction of canopy covered by liquid water and snow
+    double Wcl_o[120] = {0}, Wcs_o[120] = {0};  // the masses od rain and snow on the canopy
+    double Xcl_o[120] = {0}, Xcs_o[120] = {0};  // the fraction of canopy covered by liquid water and snow
+    double Wcl_u[120] = {0}, Wcs_u[120] = {0};  // the masses of rain and snow on the canopy
+    double Xcl_u[120] = {0}, Xcs_u[120] = {0};  // the fraction of canopy covered by liquid water and snow
 
-	double r_rain_g[120];                     // the rainfall rate, on ground surface  m/s
-	double rho_snow[120];                     // density of snow
-	double alpha_v_sw[120],alpha_n_sw[120];   // albedo of snow
-	double Wg_snow[120];                      // the amount of snow on the ground
-	double Xg_snow[120];                      // the fraction of the ground surface covered by snow
-	double Ac_snow_u[120];                    // the areas of canopy covered in snow, o--overstory and  u-- understory
-	double Ac_snow_o[120];
+    double r_rain_g[120] = {0};               // the rainfall rate, on ground surface  m/s
+    double rho_snow[120] = {0};               // density of snow
+    double alpha_v_sw[120] = {0}, alpha_n_sw[120] = {0};  // albedo of snow
+    double Wg_snow[120] = {0};                            // the amount of snow on the ground
+    double Xg_snow[120] = {0};                            // the fraction of the ground surface covered by snow
+    double Ac_snow_u[120] = {0};                          // the areas of canopy covered in snow, o--overstory and  u-- understory
+    double Ac_snow_o[120] = {0};
 
-	double Ts0[120],Tsn0[120],Tsm0[120],Tsn1[120],Tsn2[120]; // surface temperature
-	double Tc_u[120];                         // the effective canopy temperature in K
-	double Tm[layer+2][120];                  // Tb[layer+2][120],soil temperature at the bottom and the middle of each layer*/
+    double Ts0[120] = {0}, Tsn0[120] = {0}, Tsm0[120] = {0}, Tsn1[120] = {0}, Tsn2[120] = {0};  // surface temperature
+    double Tc_u[120] = {0};                                             // the effective canopy temperature in K
+    double Tm[layer + 2][120] = {0};                                    // Tb[layer+2][120],soil temperature at the bottom and the middle of each layer*/
 
-	double lambda[layer+2];                   // thermal conductivity of each soil layer;*/
-	double Cs[layer+2][120];                  // the soil volumetric heat capacity of each soil layer, j+kkk/m^3/K*/
+    double lambda[layer + 2] = {0};  // thermal conductivity of each soil layer;*/
+    double Cs[layer + 2][120] = {0};  // the soil volumetric heat capacity of each soil layer, j+kkk/m^3/K*/
 
-	double temp_air;                          // air temperature */
-	double precip,rh_air,wind_sp;             // precipitation in meters, relative humidity (%), wind speed in m/s */
-	double temp_grd;                          // ground temperature */
+    double temp_air;                 // air temperature */
+    double precip, rh_air, wind_sp;  // precipitation in meters, relative humidity (%), wind speed in m/s */
+    double temp_grd;                 // ground temperature */
 
-	double Eil_o[120],EiS_o[120];             // the evaporation rate of intercepted water of overstory--in kg/m^2/s; l-- water; S-snow
-	double Eil_u[120],EiS_u[120];             // the evaporation rate of intercepted water of overstory--in kg/m^2/s; l-- water; S-snow of intercepted water--in kg/m^2/s
-	double Trans_o[120],Trans_u[120];         // transpiration from overstory and understory canopies
-	double Evap_soil[120];                    // evaporation from soil
-	double Evap_SW[120];                      // evaporation from water pond
-	double Evap_SS[120];                      // evaporation from snow pack
-	
-	double lambda_snow[120];                  // the effective thermal conductivity of snow --in m^2/s
-	double e_a10;                             // the vapour partial pressure of water --in kPa(1mb=100Pa=0.1kpa)
+    double Eil_o[120] = {0}, EiS_o[120] = {0};  // the evaporation rate of intercepted water of overstory--in kg/m^2/s; l-- water; S-snow
+    double Eil_u[120] = {0}, EiS_u[120] = {0};  // the evaporation rate of intercepted water of overstory--in kg/m^2/s; l-- water; S-snow of intercepted water--in kg/m^2/s
+    double Trans_o[120] = {0}, Trans_u[120] = {0};  // transpiration from overstory and understory canopies
+    double Evap_soil[120] = {0};                    // evaporation from soil
+    double Evap_SW[120] = {0};                      // evaporation from water pond
+    double Evap_SS[120] = {0};                      // evaporation from snow pack
 
-	double Lv_liquid;                         // the latent heat of evaporation from liquid at air temperature=Ta, in j+kkk/kg
-	double Lv_solid=2.83*1000000;             // the latent heat of evaporation from solid (snow/ice) at air temperature=Ta, in j+kkk/kg
-	
-	double Ks;                                // KsCal,KsMea[120] instantaneous total short wave radiation (Global radiation)
+    double lambda_snow[120] = {0};  // the effective thermal conductivity of snow --in m^2/s
+    double e_a10;             // the vapour partial pressure of water --in kPa(1mb=100Pa=0.1kpa)
+
+    double Lv_liquid;                  // the latent heat of evaporation from liquid at air temperature=Ta, in j+kkk/kg
+    double Lv_solid = 2.83 * 1000000;  // the latent heat of evaporation from solid (snow/ice) at air temperature=Ta, in j+kkk/kg
+
+    double Ks;  // KsCal,KsMea[120] instantaneous total short wave radiation (Global radiation)
     double alpha_sat,alpha_dry;
     double alpha_v_o,alpha_v_u;               // visible albedo of overstory,  o--overstory, u--understory;
     double alpha_n_o,alpha_n_u;               // near-infrared albedo of overstory,o--overstory, u--understory;
