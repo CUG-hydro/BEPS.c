@@ -1,0 +1,6 @@
+[general]
+library_name = "libbeps"
+output_file_path = "./BEPS_c.jl"
+module_name = "BEPS"
+jll_pkg_name = "BEPS_jll"
+export_symbol_prefixes = ["CX", "clang_"]
