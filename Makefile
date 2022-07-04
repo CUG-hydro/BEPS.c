@@ -8,7 +8,7 @@ ODIR=build
 IDIR=src
 
 # first name a variable OBJSects for all OBJSect files
-_OBJS = aerodynamic_conductance.o bepsmain_pnt.o calc_temp_leaf.o \
+_OBJS = Leaf.o aerodynamic_conductance.o bepsmain_pnt.o calc_temp_leaf.o \
   inter_prg.o evaporation_canopy.o evaporation_soil.o init_soil.o \
   lai_calc.o meteo_pack.o netRadiation.o photosyn_gs.o plant_respir.o \
   rainfall.o readcoef.o readparam.o s_coszs.o \

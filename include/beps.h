@@ -87,6 +87,21 @@ struct cpools
     double Cp[3];
 };
 
+/** Leaf structure ----------------------------------------------------------**/
+typedef struct {
+    double o_sunlit;
+    double o_shaded;
+    double u_sunlit;
+    double u_shaded;
+} Leaf;
+
+// Leaf Leaf_default = {0, 0, 0, 0};
+// #define LEAF(...) ((Leaf){.x = 0, .y = 0, ##__VA_ARGS__})
+
+void init_leaf_struct(Leaf* x, Leaf* replacement);
+void init_leaf_dbl(Leaf* x, double replacement);
+void init_leaf_dbl2(Leaf* x, double overstory, double understory);
+
 /// @brief Declare functions
 // void readconf();
 // void mid_prg();
