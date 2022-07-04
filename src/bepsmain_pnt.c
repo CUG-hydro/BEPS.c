@@ -35,9 +35,9 @@ int main() {
     double CosZs;
     double parameter[50];
 
-    double var_o[40], var_n[40];
-    double v2last[40];
-    double outp[10], total[10];
+    double var_o[41], var_n[41];
+    double v2last[41];
+    double outp[11], total[11];
 
     struct climatedata *meteo;
     struct results *mid_res;
@@ -50,7 +50,7 @@ int main() {
 
     /*****  setup input/output file directory  *****/
     // Input file stream
-    sprintf(inp_dir, "../input");
+    sprintf(inp_dir, "examples/input");
     sprintf(site, "p1"); // site name
     sprintf(lc_fn, "%s/%s_data1.txt", inp_dir, site); // basic info
     sprintf(cp_fn, "%s/p1_data2.txt", inp_dir); // carbon pool
@@ -58,7 +58,7 @@ int main() {
     sprintf(me_fn, "%s/%s_meteo.txt", inp_dir, site); // hourly meteor. data
 
     // Output file stream
-    sprintf(outp_fn, "../output/%s_01.txt", site);
+    sprintf(outp_fn, "examples/output/%s_01.txt", site);
 
     // Set all accu. to 0
     for (i = 0; i <= 10; i++) total[i] = 0;
@@ -154,6 +154,7 @@ int main() {
 	fclose(laif_ptr);
 	fclose(me_ptr);
 
+// main begin
 	// Read parameters according to land cover types
 	readparam(landcover,parameter);
 
@@ -239,25 +240,25 @@ int main() {
             // Store updated variables array in temp array
             for (i=0;i<=40;i++)  v2last[i]=var_n[i];
 
-					
-            /***** plant respiration/NPP module *****/
-            temp_soil1=p_soil->temp_soil_c[1];
-            plantresp(landcover,mid_res,lai_yr,lai,tem,temp_soil1,CosZs);
+            // // if we don't care NEP, we can close this
+            // /***** plant respiration/NPP module *****/
+            // temp_soil1=p_soil->temp_soil_c[1];
+            // plantresp(landcover,mid_res,lai_yr,lai,tem,temp_soil1,CosZs);
 
 
-            /***** soil respiration module *****/
-            soilresp(Ccd,Cssd,Csmd,Cfsd,Cfmd,Csm,Cm,Cs,Cp,nppyr,coef,soil_type,p_soil,mid_res);
-
+            // /***** soil respiration module *****/
+            // soilresp(Ccd,Cssd,Csmd,Cfsd,Cfmd,Csm,Cm,Cs,Cp,nppyr,coef,soil_type,p_soil,mid_res);
 
             /***** save data for output *****/
             // Hourly output
             outp[1]=mid_res->GPP;
-            outp[2]=mid_res->Trans+mid_res->Evap;
-            outp[3]=mid_res->NEP;
-            outp[4]=mid_res->npp_o + mid_res->npp_u;
+            outp[2]=mid_res->Trans;
+            outp[3]=mid_res->Evap;
+            // outp[3]=mid_res->NEP;
+            // outp[4]=mid_res->npp_o + mid_res->npp_u;
 
             // Write hourly output to files
-            // fprintf(outp_ptr,"%d %d gpp= %f tr= %f Ev= %f \n",jday,rstep,outp[1],outp[2],outp[3];
+            fprintf(outp_ptr, "%d %d gpp= %f Trans= %f Evap= %f \n", jday, rstep, outp[1], outp[2], outp[3]);
 
             // Sum of output
             total[1]=total[1]+outp[1];
@@ -266,12 +267,13 @@ int main() {
 
         }// End of hourly loop
     }// End of daily loop
+// main end
 
     // Write sum of output to files
-    fprintf(outp_ptr,"total GPP: %f \t ET: %f \tNEP: %f \n",total[1],total[2],total[3]);
+    fprintf(outp_ptr, "total GPP: %f \t Trans: %f \tEvap: %f \n", total[1], total[2], total[3]);
 
     // Print sum of output
-    printf("total GPP: %f \t ET: %f \tNEP: %f \n",total[1],total[2],total[3]);
+    printf("total GPP: %f \t Trans: %f \tEvap: %f \n", total[1], total[2], total[3]);
 
     // Close output files
     fclose(outp_ptr);

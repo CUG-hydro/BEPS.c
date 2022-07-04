@@ -34,14 +34,14 @@ CC=gcc
 #	icc -g -lm -o bepsp $(OBJSects)
 # echo $(OBJS) 
 
-bepsp.exe: $(OBJS) 
+beps.exe: $(OBJS) 
 	echo $(OBJS) 
-	$(CC) $(CFLAGS) -o bepsp.exe $(OBJS) -lm
-	# gcc $(CFLAGS) -o bepsp $(OBJSects) -lm
+	$(CC) -shared -fPIC $(CFLAGS) -o libbeps.dll $(OBJS) -lm
+	$(CC) $(CFLAGS) -o beps.exe $(OBJS) -lm
+	# gcc $(CFLAGS) -o beps $(OBJSects) -lm
 
 # list the dependencies for OBJSect files - those header files which help build OBJSects
 # how to build all OBJSect files from all dependent source files
-
 $(ODIR)/%.o: $(IDIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 

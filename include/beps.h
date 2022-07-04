@@ -88,11 +88,11 @@ struct cpools
 };
 
 /// @brief Declare functions
-void readconf();
-void mid_prg();
-void readinput1();
-void readlai_d();
-void readlonlat();
+// void readconf();
+// void mid_prg();
+// void readinput1();
+// void readlai_d();
+// void readlonlat();
 
 void inter_prg(int jday,int rstep,double lai,double clumping,double parameter[],struct climatedata* meteo,
                  double CosZs,double var_o[],double var_n[],struct Soil* soilp,struct results* mid_res);
