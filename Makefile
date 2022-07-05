@@ -1,8 +1,8 @@
 # beps.make
 # make file to compile beps program
 
-# CFLAGS=-std=c99 -O3
-CFLAGS=-std=c99 -g -O3 -Iinclude
+# CFLAGS=-std=c99 -O3 -Wall
+CFLAGS=-std=c99 -g -O3 -Iinclude 
 
 ODIR=build
 IDIR=src

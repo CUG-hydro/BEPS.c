@@ -7,15 +7,35 @@
 #include "soil.h"
 #include <math.h>
 
-
-/// @brief Function to initialize soil parameters
-/// @details [1] Set the depth for each layer
-/// @details [2] Set the parameters for each layer
-/// @param  landcover     land cover type
-/// @param  stxt          soil texture
-/// @param  r_root_decay  decay rate of root distribution
-/// @param  p             Soil struct variable
-/// @return void
+/**
+ * @brief Function to initialize soil parameters
+ *
+ *
+ * @param  landcover     land cover type
+ * @param  stxt          soil texture
+ * @param  r_root_decay  decay rate of root distribution
+ * @param  p             Soil struct variable
+ *
+ * @return void
+ *
+ * @details Set the depth for each layer; Set the parameters for each layer.
+ *
+ * # Optional variables:
+ *
+ * - `d_soil`       : the depth of each soil layer, (m)
+ * - `density_soil` : soil bulk density, (kg/m3)
+ * - `f_org`        : volume fraction of organic matter
+ *
+ * # Hard variables:
+ *
+ * - `b`            : Cambell parameter b
+ * - `Ksat`         : saturated hydraulic conductivity
+ * - `fei`          : porosity
+ * - `theta_vfc`    : field capacity (ignored)
+ * - `theta_vwp`    : wilt point
+ * - `thermal_cond` : thermal conductivity
+ * - `psi_sat`    : water potential at saturated
+ */
 void Init_Soil_Parameters(int landcover, int stxt, double r_root_decay, struct Soil p[])
 {
     p->n_layer = 5;
@@ -51,8 +71,6 @@ void Init_Soil_Parameters(int landcover, int stxt, double r_root_decay, struct S
     p->f_org[2] = 1;
     p->f_org[3] = 1;
     p->f_org[4] = 0.3;
-
-
 
     switch (stxt)
     {
@@ -194,15 +212,13 @@ void Init_Soil_Parameters(int landcover, int stxt, double r_root_decay, struct S
 void Init_Soil_Status(struct Soil p[], double Tsoil, double Tair, double Ms, double snowdepth)
 {
     int i;
-    double d_t = Tsoil - Tair;
-
+    double d_t = clamp(Tsoil - Tair, -5.0, 5.0);
+    // if (d_t>5.0)  d_t = 5.0;
+    // if (d_t<-5.0) d_t = -5.0;
+    
     p->Zp = 0.0; /* depth of ponded water on the surface*/
     p->Zsp = snowdepth; /*Snow depth;*/
     p->r_rain_g = 0.0;  /*the rainfall rate, un--on understory g--on ground surface  m/s */
-
-
-    if (d_t>5.0)  d_t = 5.0;
-    if (d_t<-5.0) d_t = -5.0;
 
     p->temp_soil_c[0] = Tair + 0.4*d_t;
     p->temp_soil_c[1] = Tair + 0.5*d_t;

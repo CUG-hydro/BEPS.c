@@ -28,9 +28,9 @@ int main() {
     FILE *lc_ptr, *cp_ptr, *laif_ptr, *me_ptr, *outp_ptr;
 
     double es, esd;
-    double theta_vfc[layer + 1], theta_vwp[layer + 1], thermal_s[layer + 1];
-    double psi_sat[layer + 1], bb[layer + 1], fei[layer + 1];
-    double Ksat[layer + 1], theta[layer + 1];
+    // double theta_vfc[layer + 1], theta_vwp[layer + 1], thermal_s[layer + 1];
+    // double psi_sat[layer + 1], bb[layer + 1], fei[layer + 1];
+    // double Ksat[layer + 1], theta[layer + 1];
     double coef[100];
     double CosZs;
     double parameter[50];

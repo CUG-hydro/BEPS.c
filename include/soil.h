@@ -66,7 +66,6 @@ struct Soil{
     // soil temperature in this layer. don't change because it is used in soil_water_factor_v2, and UpdateSoil_Moisture.
     double temp_soil_c[MAX_LAYERS];
 
-
     // Derived variables below:
     double f_ice[MAX_LAYERS];        // derived var.
     double psim[MAX_LAYERS];         // soil water suction in this layer. Note: this variable can be derived from other parameters. LHE.
@@ -84,6 +83,8 @@ struct Soil{
     // define a lambda_top for ice?
     double G[MAX_LAYERS];            // energy fluxes
 };
+
+double clamp(double x, double low, double high);
 
 /// @brief Declare functions
 void SoilRootFraction(struct Soil soil[]);

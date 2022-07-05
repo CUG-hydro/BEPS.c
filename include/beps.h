@@ -35,6 +35,7 @@
 #define step 	    3600	// 3600 in sec
 #define kstep		360     // 10 times per hour, 360 sec. per time
 #define kloop		10      // 10 times per hour, 360 sec. per time
+#define MAX_Loop	11      // 10 times per hour, 360 sec. per time
 #define layer		5
 #define depth_f		6
 #define CO2_air     380     // atmospheric CO2 concentration
@@ -113,8 +114,6 @@ double leaf_sum(Leaf x);
 // void readinput1();
 // void readlai_d();
 // void readlonlat();
-
-double clamp(double x, double low, double high);
 
 void inter_prg(int jday,int rstep,double lai,double clumping,double parameter[],struct climatedata* meteo,
                  double CosZs,double var_o[],double var_n[],struct Soil* soilp,struct results* mid_res);
