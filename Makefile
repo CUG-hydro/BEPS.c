@@ -46,7 +46,7 @@ $(ODIR)/%.o: $(IDIR)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 clean:
-	@rm $(OBJS) *.exe *.dll
+	-@rm $(OBJS) *.exe *.dll
 
 # $(OBJSects): $(sources)
 #	icc -g -c $(sources)

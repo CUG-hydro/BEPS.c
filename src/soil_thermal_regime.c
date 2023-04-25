@@ -134,3 +134,11 @@ void UpdateSoilThermalConductivity(struct Soil p[])
         p->lambda[i] = max(p->lambda[i], 0.15);     // juweimin05
     }
 }
+
+void Update_temp_soil_c(struct Soil p[], double value) {
+    p->temp_soil_c[0] = value;
+}
+
+void Update_G(struct Soil p[], double value) {
+    p->G[0] = value;
+}

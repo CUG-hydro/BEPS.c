@@ -100,4 +100,7 @@ void UpdateSoilThermalConductivity(struct Soil p[]);
 void UpdateHeatFlux(struct Soil p[], double Xg_snow, double lambda_snow, double Tsn0, double Tair_annual_mean, double peroid_in_seconds);
 void UpdateSoilMoisture(struct Soil p[], double peroid_in_seconds);
 
+void Update_temp_soil_c(struct Soil p[], double value);
+void Update_G(struct Soil p[], double value);
+
 #endif
