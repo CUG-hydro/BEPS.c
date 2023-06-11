@@ -455,7 +455,6 @@ void inter_prg_c(int jday, int rstep, double lai, double clumping, double parame
                             &Ts0[kkk], &Tm[0][kkk], &Tsn0[kkk],
                             &Tsm0[kkk], &Tsn1[kkk], &Tsn2[kkk],
                             &G[0][kkk]);
-
         soilp->temp_soil_c[0] = Tm[0][kkk];
 
         /*****  Snow Pack Stage 3 module by X. Luo  *****/
@@ -465,12 +464,21 @@ void inter_prg_c(int jday, int rstep, double lai, double clumping, double parame
         sensible_heat(Tc_new, Ts0[kkk], temp_air, rh_air,
                       Gh, Gheat_g, PAI, &Qhc_o[kkk], &Qhc_u[kkk], &Qhg[kkk]);
 
+        // printf("===========================\n");
+        // printf("kkk = %d\n", kkk+1);
+        // printf("Ts0 = %f, Tm = %f, Tsno = %f, Tsm0 = %f, Tsn1 = %f, Tsn2 = %f, G = %f\n",
+        //        Ts0[kkk], Tm[0][kkk], Tsn0[kkk],
+        //        Tsm0[kkk], Tsn1[kkk], Tsn2[kkk],
+        //        G[0][kkk]);
+        // printf("Ta = %f, Gg = %f, QHs = %f, %f, %f\n",
+        //        temp_air, Gheat_g,
+        //        Qhc_o[kkk], Qhc_u[kkk], Qhg[kkk]);
+
         /*****  Soil water module by L. He  *****/
         // in-process value check
         // if(jday==75 && rstep==8 && kkk==5)
         // if(jday==75 && rstep==8 )
         // printf("%d, %d, %f, %f\n", jday, rstep, soilp->thetam_prev[0], soilp->f_soilwater);
-
         soilp->Zsp = Zsp;
         soilp->G[0] = G[0][kkk];
 

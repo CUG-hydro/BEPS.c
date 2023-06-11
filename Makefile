@@ -2,7 +2,7 @@
 # make file to compile beps program
 
 # CFLAGS=-std=c99 -O3 -Wall
-CFLAGS=-std=c99 -g -O3 -Iinclude 
+CFLAGS=-std=c99 -g -O3 -Iinclude -fPIC
 
 ODIR=build
 IDIR=src
@@ -36,7 +36,7 @@ CC=gcc
 
 beps.exe: $(OBJS) 
 	echo $(OBJS) 
-	$(CC) -shared -fPIC $(CFLAGS) -o libbeps.dll $(OBJS) -lm
+	$(CC) -shared $(CFLAGS) -o libbeps.dll $(OBJS) -lm
 	$(CC) $(CFLAGS) -o beps.exe $(OBJS) -lm
 	# gcc $(CFLAGS) -o beps $(OBJSects) -lm
 
