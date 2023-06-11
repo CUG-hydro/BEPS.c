@@ -7,59 +7,59 @@
 #ifndef SOIL_H
 #define SOIL_H
 
-#define FW_VERSION 1 // 0 for soil water uptake using R, and 1 for soil water uptake using R*fpsisr
+#define FW_VERSION 1  // 0 for soil water uptake using R, and 1 for soil water uptake using R*fpsisr
 
-#define max(a,b) 	((a)>(b))?(a):(b) 
-#define min(a,b)	((a)<(b))?(a):(b) 
+#define max(a, b) ((a) > (b)) ? (a) : (b)
+#define min(a, b) ((a) < (b)) ? (a) : (b)
 
 // Note: change the value of MAX_LAYERS to a small one for global application
 // e.g. max layers = 6.
-#define MAX_LAYERS 10 // LHE. Jan 28, 2013.
-#define DEPTH_F 6 
+#define MAX_LAYERS 10  // LHE. Jan 28, 2013.
+#define DEPTH_F 6
 
 /// @brief Define soil struct
-struct Soil{
+struct Soil {
     /********************************************/
     // Properties belong to the whole soil profile
-    int flag;				// reserved for EnKF usage.
-    int n_layer;			// the number of layers used in the model. Make sure n_layer <= MAX_LAYERS
+    int flag;     // reserved for EnKF usage.
+    int n_layer;  // the number of layers used in the model. Make sure n_layer <= MAX_LAYERS
     int step_period;
 
     // Conditions on the top boundary
-    double Zp;				// depth of ponded water on the ground surface
-    double Zsp;             // snow depth
-    double r_rain_g;		// the rainfall rate, un--on understory g--on ground surface  m/s
-    double soil_r;			// soil surface resistance for water, discuss with Remi - an interface here
+    double Zp;        // depth of ponded water on the ground surface
+    double Zsp;       // snow depth
+    double r_rain_g;  // the rainfall rate, un--on understory g--on ground surface  m/s
+    double soil_r;    // soil surface resistance for water, discuss with Remi - an interface here
     double r_drainage;
 
     // Some variable used for soil
     // double t1;
     // double t2;
-    double r_root_decay;	// decay_rate_of_root_distribution
-    double psi_min;         // for fw
-    double alpha;           // for fw
+    double r_root_decay;  // decay_rate_of_root_distribution
+    double psi_min;       // for fw
+    double alpha;         // for fw
     double f_soilwater;
 
     /********************************************/
     // Properties belong to each soil horizon
     double d_soil[MAX_LAYERS];
-    double f_root[MAX_LAYERS];       // root weight
-    double dt[MAX_LAYERS];           // the weight calculated from soil_water_factor **re-calculate in the model
+    double f_root[MAX_LAYERS];  // root weight
+    double dt[MAX_LAYERS];      // the weight calculated from soil_water_factor **re-calculate in the model
 
     // From read-param function
-    double thermal_cond[MAX_LAYERS]; // thermal conductivity. Unit:
-    double theta_vfc[MAX_LAYERS];    // field capacity (not used in this model. LHE. Feb. 01, 2013)
-    double theta_vwp[MAX_LAYERS];    // wilt point*/
-    double fei[MAX_LAYERS];          // porosity */
-    double Ksat[MAX_LAYERS];         // saturated hydraulic conductivity
-    double psi_sat[MAX_LAYERS];      // water potential at sat
-    double b[MAX_LAYERS];            // Cambell parameter b
-    double density_soil[MAX_LAYERS]; // soil bulk density of layer. LHE. Feb. 12, 2013.
-    double f_org[MAX_LAYERS];        // volume fraction of organic matter in layer (%).
+    double thermal_cond[MAX_LAYERS];  // thermal conductivity. Unit:
+    double theta_vfc[MAX_LAYERS];     // field capacity (not used in this model. LHE. Feb. 01, 2013)
+    double theta_vwp[MAX_LAYERS];     // wilt point*/
+    double fei[MAX_LAYERS];           // porosity */
+    double Ksat[MAX_LAYERS];          // saturated hydraulic conductivity
+    double psi_sat[MAX_LAYERS];       // water potential at sat
+    double b[MAX_LAYERS];             // Cambell parameter b
+    double density_soil[MAX_LAYERS];  // soil bulk density of layer. LHE. Feb. 12, 2013.
+    double f_org[MAX_LAYERS];         // volume fraction of organic matter in layer (%).
 
     // Variables need to save
-    double ice_ratio[MAX_LAYERS];    // the ratio of ice of soil layer
-    double thetam[MAX_LAYERS], thetam_prev[MAX_LAYERS]; // soil water content in this layer
+    double ice_ratio[MAX_LAYERS];                        // the ratio of ice of soil layer
+    double thetam[MAX_LAYERS], thetam_prev[MAX_LAYERS];  // soil water content in this layer
 
     // soil temperature in this layer, don't change because it is used in soil_water_factor_v2, and UpdateSoil_Moisture.
     double temp_soil_p[MAX_LAYERS];
@@ -73,15 +73,15 @@ struct Soil{
     double psib[MAX_LAYERS];         // soil water suction at the bottom this layer
     double r_waterflow[MAX_LAYERS];  // the liquid water flow rates at the soil layer interfaces  'eg. 0,1,2..., represents the surface, the bottom of layer1, the bottom of layer2,...
 
-    double km[MAX_LAYERS], Kb[MAX_LAYERS];   //the hydraulic conductivity of certain soil layer
-    double KK[MAX_LAYERS];           // The average  conductivity of two soil layers.*/
+    double km[MAX_LAYERS], Kb[MAX_LAYERS];  // the hydraulic conductivity of certain soil layer
+    double KK[MAX_LAYERS];                  // The average  conductivity of two soil layers.*/
 
     double Cs[MAX_LAYERS];
-    double lambda[MAX_LAYERS];       // thermal conductivity of each soil layer /* ={0} by LHE */ // not used in gpp-only version. derived var.
-    double Ett[MAX_LAYERS];          // ET in each layer. derived var
+    double lambda[MAX_LAYERS];  // thermal conductivity of each soil layer /* ={0} by LHE */ // not used in gpp-only version. derived var.
+    double Ett[MAX_LAYERS];     // ET in each layer. derived var
 
     // define a lambda_top for ice?
-    double G[MAX_LAYERS];            // energy fluxes
+    double G[MAX_LAYERS];  // energy fluxes
 };
 
 double clamp(double x, double low, double high);

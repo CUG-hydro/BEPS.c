@@ -41,12 +41,15 @@ int main() {
 
     struct climatedata *meteo;
     struct results *mid_res;
+    
     struct Soil *p_soil;
 
     // Declare dynamic arrays
+    struct OutputET *mid_ET = (struct OutputET *)malloc(sizeof(struct OutputET));
+    p_soil = (struct Soil *)malloc(sizeof(struct Soil));
+
     meteo = (struct climatedata *) malloc(366 * sizeof(struct climatedata));
     mid_res = (struct results *) malloc(366 * sizeof(struct results));
-    p_soil = (struct Soil *) malloc(sizeof(struct Soil));
 
     /*****  setup input/output file directory  *****/
     // Input file stream
@@ -231,9 +234,8 @@ int main() {
 
 
             /***** start simulation modules *****/
-            //printf("%d, %d, %f\n", jday, rstep, p_soil->thetam_prev[0]); // in-process check
-            inter_prg(jday,rstep,lai,clumping,parameter,meteo,CosZs,var_o,var_n,p_soil,mid_res);
-
+            // printf("%d, %d, %f\n", jday, rstep, p_soil->thetam_prev[0]); // in-process check
+            inter_prg_c(jday,rstep,lai,clumping,parameter,meteo,CosZs,var_o,var_n,p_soil,mid_res, mid_ET);
 
             //printf("%d, %d, %f, %f\n", jday, rstep, p_soil->thetam_prev[0], p_soil->f_soilwater); // in-process check
 
@@ -282,6 +284,7 @@ int main() {
     free(meteo);
     free(mid_res);
     free(p_soil);
+    free(mid_ET);
 
     return 0;
 }

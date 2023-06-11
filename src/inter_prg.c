@@ -18,8 +18,8 @@
 /// @param  soilp      soil coefficients according to land cover types and soil textures
 /// @param  mid_res    results struct
 /// @return void
-void inter_prg(int jday, int rstep, double lai, double clumping, double parameter[], struct climatedata* meteo,
-               double CosZs, double var_o[], double var_n[], struct Soil* soilp, struct results* mid_res) {
+void inter_prg_c(int jday, int rstep, double lai, double clumping, double parameter[], struct climatedata* meteo,
+                 double CosZs, double var_o[], double var_n[], struct Soil* soilp, struct results* mid_res, struct OutputET* mid_ET) {
     /*****  define parameters and arrays  *****/
     int num, kkk;
     int landcover;
@@ -27,32 +27,32 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     double stem_o, stem_u;
 
     double d_soil[layer + 1];
-    double Zsp;                   // the depth of snow on the surface
-    double Zp;  // depth of pounded water on the surface
+    double Zsp;  // the depth of snow on the surface
+    double Zp;   // depth of pounded water on the surface
     // double Zp1 = 0, makeZp2 = 0;
-    double height_wind_sp;        // height of the Va measured for calculation of L
+    double height_wind_sp;  // height of the Va measured for calculation of L
 
     double Qhc_o[MAX_Loop] = {0}, Qhc_u[MAX_Loop] = {0}, Qhg[MAX_Loop] = {0};  // The sensible heat flux from canopy and ground
-    double G[layer + 2][MAX_Loop] = {0};                             // the heat flux into the canopy of over story --in W/m^2
+    double G[layer + 2][MAX_Loop] = {0};                                       // the heat flux into the canopy of over story --in W/m^2
 
     double Wcl_o[MAX_Loop] = {0}, Wcs_o[MAX_Loop] = {0};  // the masses od rain and snow on the canopy
     double Xcl_o[MAX_Loop] = {0}, Xcs_o[MAX_Loop] = {0};  // the fraction of canopy covered by liquid water and snow
     double Wcl_u[MAX_Loop] = {0}, Wcs_u[MAX_Loop] = {0};  // the masses of rain and snow on the canopy
     double Xcl_u[MAX_Loop] = {0}, Xcs_u[MAX_Loop] = {0};  // the fraction of canopy covered by liquid water and snow
 
-    double r_rain_g[MAX_Loop] = {0};                           // the rainfall rate, on ground surface  m/s
-    double rho_snow[MAX_Loop] = {0};                           // density of snow
+    double r_rain_g[MAX_Loop] = {0};                                // the rainfall rate, on ground surface  m/s
+    double rho_snow[MAX_Loop] = {0};                                // density of snow
     double alpha_v_sw[MAX_Loop] = {0}, alpha_n_sw[MAX_Loop] = {0};  // albedo of snow
-    double Wg_snow[MAX_Loop] = {0};                            // the amount of snow on the ground
-    double Xg_snow[MAX_Loop] = {0};                            // the fraction of the ground surface covered by snow
-    double Ac_snow_u[MAX_Loop] = {0};                          // the areas of canopy covered in snow, o--overstory and  u-- understory
+    double Wg_snow[MAX_Loop] = {0};                                 // the amount of snow on the ground
+    double Xg_snow[MAX_Loop] = {0};                                 // the fraction of the ground surface covered by snow
+    double Ac_snow_u[MAX_Loop] = {0};                               // the areas of canopy covered in snow, o--overstory and  u-- understory
     double Ac_snow_o[MAX_Loop] = {0};
 
     double Ts0[MAX_Loop] = {0}, Tsn0[MAX_Loop] = {0}, Tsm0[MAX_Loop] = {0}, Tsn1[MAX_Loop] = {0}, Tsn2[MAX_Loop] = {0};  // surface temperature
-    double Tc_u[MAX_Loop] = {0};                                                                     // the effective canopy temperature in K
-    double Tm[layer + 2][MAX_Loop] = {0};                                                            // Tb[layer+2][MAX_Loop],soil temperature at the bottom and the middle of each layer*/
+    double Tc_u[MAX_Loop] = {0};                                                                                         // the effective canopy temperature in K
+    double Tm[layer + 2][MAX_Loop] = {0};                                                                                // Tb[layer+2][MAX_Loop],soil temperature at the bottom and the middle of each layer*/
 
-    double lambda[layer + 2] = {0};   // thermal conductivity of each soil layer;*/
+    double lambda[layer + 2] = {0};        // thermal conductivity of each soil layer;*/
     double Cs[layer + 2][MAX_Loop] = {0};  // the soil volumetric heat capacity of each soil layer, j+kkk/m^3/K*/
 
     double temp_air;                 // air temperature */
@@ -62,15 +62,12 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     double Eil_o[MAX_Loop] = {0}, EiS_o[MAX_Loop] = {0};      // the evaporation rate of intercepted water of overstory--in kg/m^2/s; l-- water; S-snow
     double Eil_u[MAX_Loop] = {0}, EiS_u[MAX_Loop] = {0};      // the evaporation rate of intercepted water of overstory--in kg/m^2/s; l-- water; S-snow of intercepted water--in kg/m^2/s
     double Trans_o[MAX_Loop] = {0}, Trans_u[MAX_Loop] = {0};  // transpiration from overstory and understory canopies
-    double Evap_soil[MAX_Loop] = {0};                    // evaporation from soil
-    double Evap_SW[MAX_Loop] = {0};                      // evaporation from water pond
-    double Evap_SS[MAX_Loop] = {0};                      // evaporation from snow pack
+    double Evap_soil[MAX_Loop] = {0};                         // evaporation from soil
+    double Evap_SW[MAX_Loop] = {0};                           // evaporation from water pond
+    double Evap_SS[MAX_Loop] = {0};                           // evaporation from snow pack
 
     double lambda_snow[MAX_Loop] = {0};  // the effective thermal conductivity of snow --in m^2/s
-    double e_a10;                   // the vapour partial pressure of water --in kPa(1mb=100Pa=0.1kpa)
-
-    double Lv_liquid;                  // the latent heat of evaporation from liquid at air temperature=Ta, in j+kkk/kg
-    double Lv_solid = 2.83 * 1000000;  // the latent heat of evaporation from solid (snow/ice) at air temperature=Ta, in j+kkk/kg
+    double e_a10;                        // the vapour partial pressure of water --in kPa(1mb=100Pa=0.1kpa)
 
     double Ks;  // KsCal,KsMea[MAX_Loop] instantaneous total short wave radiation (Global radiation)
     double alpha_sat, alpha_dry;
@@ -111,12 +108,11 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     Leaf GPP, LAI;
     Leaf PAI;  // PAI = LAI + SAI; // double LAI.o_sunlit, LAI.o_shaded, LAI.u_sunlit, LAI.u_shaded;
 
-    
-    double f_soilwater;                                                         // an empirical parameter describing the relative availability of soil water for plants
+    double f_soilwater;  // an empirical parameter describing the relative availability of soil water for plants
     double psychrometer = 0.066;
     double Tco, Tcu, slope;
-    double H_o_sunlit, H_o_shaded;                                  // sensible heat flux from leaves
-    
+    double H_o_sunlit, H_o_shaded;  // sensible heat flux from leaves
+
     double VPS_air;
     double GH_o, Ga_o, Gb_o, Ga_u, Gb_u;
     double canopyh_o, canopyh_u;
@@ -207,12 +203,12 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     }
 
     // Ground surface temperature
-    Ts0[0]  = clamp(var_o[3], temp_air - 2.0, temp_air + 2.0);
+    Ts0[0] = clamp(var_o[3], temp_air - 2.0, temp_air + 2.0);
     Tsn0[0] = clamp(var_o[4], temp_air - 2.0, temp_air + 2.0);
     Tsm0[0] = clamp(var_o[5], temp_air - 2.0, temp_air + 2.0);
     Tsn1[0] = clamp(var_o[6], temp_air - 2.0, temp_air + 2.0);
     Tsn2[0] = clamp(var_o[7], temp_air - 2.0, temp_air + 2.0);
-    
+
     Qhc_o[0] = var_o[11];
     Wcl_o[0] = var_o[15];
     Wcs_o[0] = var_o[16]; /* the mass of intercepted liquid water and snow, overstory */
@@ -276,7 +272,7 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
 
         slope = 2503.0 / pow((temp_air + 237.3), 2) * exp(17.27 * temp_air / (temp_air + 237.3));
 
-        init_leaf_dbl(&Ci_old, 0.7 * CO2_air);      // over- and under-store
+        init_leaf_dbl(&Ci_old, 0.7 * CO2_air);          // over- and under-store
         init_leaf_dbl2(&Gs_old, 1 / 200.0, 1 / 300.0);  // over- and under-store
 
         percentArea_snow_o = Ac_snow_o[kkk] / lai_o / 2;
@@ -348,10 +344,10 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
             // init_leaf_struct(&Ci_old, Ci_new);
             // init_leaf_struct(&Cs_old, Cs_new);
             // init_leaf_struct(&Gs_old, Gs_new);  // m/s
-            
+
             Ci_old.o_sunlit = Ci_new.o_sunlit;
             Cs_old.o_sunlit = Cs_new.o_sunlit;
-            Gs_old.o_sunlit = Gs_new.o_sunlit;                                        // m/s
+            Gs_old.o_sunlit = Gs_new.o_sunlit;  // m/s
 
             Ci_old.o_shaded = Ci_new.o_shaded;
             Cs_old.o_shaded = Cs_new.o_shaded;
@@ -367,15 +363,15 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
             Gs_old.u_shaded = Gs_new.u_shaded;  // m/s
 
             Gw.o_sunlit = 1.0 / (1.0 / Ga_o + 1.0 / Gb_o + 1.0 / Gs_new.o_sunlit);  // conductance for water
-            Gw.o_shaded = 1.0 / (1.0 / Ga_o + 1.0 / Gb_o + 1.0 / Gs_new.o_shaded);  
-            Gw.u_sunlit = 1.0 / (1.0 / Ga_u + 1.0 / Gb_u + 1.0 / Gs_new.u_sunlit);  
-            Gw.u_shaded = 1.0 / (1.0 / Ga_u + 1.0 / Gb_u + 1.0 / Gs_new.u_shaded);  
+            Gw.o_shaded = 1.0 / (1.0 / Ga_o + 1.0 / Gb_o + 1.0 / Gs_new.o_shaded);
+            Gw.u_sunlit = 1.0 / (1.0 / Ga_u + 1.0 / Gb_u + 1.0 / Gs_new.u_sunlit);
+            Gw.u_shaded = 1.0 / (1.0 / Ga_u + 1.0 / Gb_u + 1.0 / Gs_new.u_shaded);
 
             Gc.o_sunlit = 1.0 / (1.0 / Ga_o + 1.4 / Gb_o + 1.6 / Gs_new.o_sunlit);  // conductance for CO2
-            Gc.o_shaded = 1.0 / (1.0 / Ga_o + 1.4 / Gb_o + 1.6 / Gs_new.o_shaded);  
-            Gc.u_sunlit = 1.0 / (1.0 / Ga_u + 1.4 / Gb_u + 1.6 / Gs_new.u_sunlit);  
-            Gc.u_shaded = 1.0 / (1.0 / Ga_u + 1.4 / Gb_u + 1.6 / Gs_new.u_shaded);  
-            
+            Gc.o_shaded = 1.0 / (1.0 / Ga_o + 1.4 / Gb_o + 1.6 / Gs_new.o_shaded);
+            Gc.u_sunlit = 1.0 / (1.0 / Ga_u + 1.4 / Gb_u + 1.6 / Gs_new.u_sunlit);
+            Gc.u_shaded = 1.0 / (1.0 / Ga_u + 1.4 / Gb_u + 1.6 / Gs_new.u_shaded);
+
             /***** Leaf temperatures module by L. He  *****/
             Leaf_Temperatures(temp_air, slope, psychrometer, VPD_air, Cp_ca,
                               Gw, Gww, Gh,
@@ -497,6 +493,21 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     // if (Tsn2[kkk] > 40) Tsn2[kkk] = 40;
     // if (Tsn2[kkk] < -40) Tsn2[kkk] = -40;
 
+    mid_ET->Trans_o   = Trans_o[kkk];
+    mid_ET->Trans_u   = Trans_u[kkk];
+    mid_ET->Eil_o     = Eil_o[kkk];
+    mid_ET->Eil_u     = Eil_u[kkk];
+    mid_ET->EiS_o     = EiS_o[kkk];
+    mid_ET->EiS_u     = EiS_u[kkk];
+    mid_ET->Evap_soil = Evap_soil[kkk];
+    mid_ET->Evap_SW   = Evap_SW[kkk];
+    mid_ET->Evap_SS   = Evap_SS[kkk];
+    mid_ET->Qhc_o     = Qhc_o[kkk];
+    mid_ET->Qhc_u     = Qhc_u[kkk];
+    mid_ET->Qhg       = Qhg[kkk];
+
+    update_ET(mid_ET, mid_res, temp_air);
+
     var_n[3] = Ts0[kkk];   // To: The temperature of ground surface
     var_n[4] = Tsn0[kkk];  // To: The temperature of ground surface
     var_n[5] = Tsm0[kkk];
@@ -510,22 +521,36 @@ void inter_prg(int jday, int rstep, double lai, double clumping, double paramete
     var_n[19] = Wcs_u[kkk];    // the mass of intercepted liquid water and snow, overstory
     var_n[20] = Wg_snow[kkk];  // the fraction of ground surface covered by snow and snow mass
 
-    Lv_liquid = (2.501 - 0.00237 * temp_air) * 1000000;  // The latent heat of water vaporization in j/kg
-
     mid_res->Net_Rad = radiation_o + radiation_u + radiation_g;
-    mid_res->LH = Lv_liquid * (Trans_o[kkk] + Eil_o[kkk] + Trans_u[kkk] + Eil_u[kkk] + Evap_soil[kkk] + Evap_SW[kkk]) + Lv_solid * (EiS_o[kkk] + EiS_u[kkk] + Evap_SS[kkk]);
-    //  LH:  total latent heat flux
-    mid_res->SH = Qhc_o[kkk] + Qhc_u[kkk] + Qhg[kkk];  // SH: total sensible heat flux
-
-    mid_res->Trans = (Trans_o[kkk] + Trans_u[kkk]) * step;                                                                      // total transpiration  mm/step
-    mid_res->Evap = (Eil_o[kkk] + Eil_u[kkk] + Evap_soil[kkk] + Evap_SW[kkk] + EiS_o[kkk] + EiS_u[kkk] + Evap_SS[kkk]) * step;  // total evaporation -> mm/step
-
     mid_res->gpp_o_sunlit = GPP.o_sunlit;  // umol C/m2/s
     mid_res->gpp_u_sunlit = GPP.u_sunlit;
     mid_res->gpp_o_shaded = GPP.o_shaded;
     mid_res->gpp_u_shaded = GPP.u_shaded;
-
     // total GPP -> gC/m2/step
     mid_res->GPP = (GPP.o_sunlit + GPP.o_shaded + GPP.u_sunlit + GPP.u_shaded) * 12 * step * 0.000001;
     return;
+}
+
+void update_ET(struct OutputET* x, struct results* mid_res, double Ta) {
+    double Lv_liquid = (2.501 - 0.00237 * Ta) * 1000000;  // The latent heat of water vaporization in j/kg
+    double Lv_solid = 2.83 * 1000000;  // the latent heat of evaporation from solid (snow/ice) at air temperature=Ta, in j+kkk/kg
+
+    x->LH = Lv_liquid * (x->Trans_o + x->Eil_o + x->Trans_u + x->Eil_u + x->Evap_soil + x->Evap_SW) +
+            Lv_solid * (x->EiS_o + x->EiS_u + x->Evap_SS);
+    //  LH:  total latent heat flux
+    x->SH = x->Qhc_o + x->Qhc_u + x->Qhg;  // SH: total sensible heat flux
+
+    x->Trans = (x->Trans_o + x->Trans_u) * step;                                                            // total transpiration  mm/step
+    x->Evap = (x->Eil_o + x->Eil_u + x->Evap_soil + x->Evap_SW + x->EiS_o + x->EiS_u + x->Evap_SS) * step;  // total evaporation -> mm/step
+
+    mid_res->LH = x->LH;
+    mid_res->SH    = x->SH;
+    mid_res->Trans = x->Trans;
+    mid_res->Evap = x->Evap;
+}
+
+void inter_prg(int jday, int rstep, double lai, double clumping, double parameter[], struct climatedata* meteo,
+               double CosZs, double var_o[], double var_n[], struct Soil* p_soil, struct results* mid_res) {
+    struct OutputET* mid_ET;
+    inter_prg_c(jday, rstep, lai, clumping, parameter, meteo, CosZs, var_o, var_n, p_soil, mid_res, mid_ET);
 }
