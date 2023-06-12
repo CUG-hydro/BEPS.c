@@ -6,7 +6,16 @@
 
 #include "beps.h"
 
-// rm, ra_u, ra_g, G_o_a, G_o_b, G_u_a, G_u_b
+double cal_Nu(double u, double nu_lower) {
+    // double lw = 0.3;   // leaf characteristic width =0.3 for BS
+    // double sigma = 5;  // shelter factor =5 for BS
+    // double Re = (ud * lw / sigma) / nu_lower;
+    double Re = (u * 0.1) / nu_lower; /* Reynold's number */
+    double Nu = 1.0 * pow(Re, 0.5);   /* Nusselt number */
+    return Nu;
+}
+
+// ra_o, ra_u, ra_g, G_o_a, G_o_b, G_u_a, G_u_b
 
 /// @brief Function to calculate aerodynamic resistance and conductance
 /// @param  canopy_height_o  canopy height, overstory
@@ -18,7 +27,7 @@
 /// @param  SH_o_p           sensible heat flux from overstory
 /// @param  lai_o            leaf area index, overstory (lai_o+stem_o)
 /// @param  lai_u            leaf area index, understory (lai_u+stem_u)
-/// @param  rm               aerodynamic resistance, overstory, in s/m
+/// @param  ra_o               aerodynamic resistance, overstory, in s/m
 /// @param  ra_u             aerodynamic resistance, understory, in s/m
 /// @param  ra_g             aerodynamic resistance, ground, in s/m
 /// @param  G_o_a            aerodynamic conductance for leaves, overstory
@@ -28,12 +37,10 @@
 /// @return void
 void aerodynamic_conductance(double canopy_height_o, double canopy_height_u, double z_wind, double clumping,
                              double temp_air, double wind_sp, double SH_o_p, double lai_o, double lai_u,
-                             double *rm, double *ra_u, double *ra_g, double *G_o_a, double *G_o_b, double *G_u_a, double *G_u_b)
+                             double *ra_o, double *ra_u, double *ra_g, double *G_o_a, double *G_o_b, double *G_u_a, double *G_u_b)
 
 {
     double kh_o;
-    double lw = 0.3;             // leaf characteristic width =0.3 for BS
-    double sigma = 5;            // shelter factor =5 for BS
     double rb_o, rb_u;           // leaf boundary layer for overstory and understory
     double k = 0.4;              // von Karman's constant
     double beta = 0.5;           // Bowen's ratio
@@ -43,7 +50,7 @@ void aerodynamic_conductance(double canopy_height_o, double canopy_height_u, dou
     double n = 5.0;
 
     double nu_lower;  // viscosity (cm2/s)
-    double uf;
+    // double uf;
     double psi;
     double d;      // displacement height (m)
     double z0;     // roughness length (m)
@@ -68,9 +75,6 @@ void aerodynamic_conductance(double canopy_height_o, double canopy_height_u, dou
     alfaw = (18.9 + temp_air * 0.07) / 1000000;
 
     if (wind_sp == 0) {
-        uh = 0;
-        uf = 0;
-        psi = 6;
         *G_o_a = 1 / 200.0;
         *G_o_b = 1 / 200.0;
         *G_u_a = 1 / 200.0;
@@ -85,8 +89,7 @@ void aerodynamic_conductance(double canopy_height_o, double canopy_height_u, dou
         L = max(-2.0, L);
 
         ram = 1 / (k * ustar) * (log((z_wind - d) / z0) + (n * (z_wind - d) * L));
-        ram = max(2, ram);
-        ram = min(100, ram);
+        ram = clamp(ram, 2, 100);
 
         if (L > 0)
             psi = 1 + 5 * (z_wind - d) * L;
@@ -102,19 +105,13 @@ void aerodynamic_conductance(double canopy_height_o, double canopy_height_u, dou
 
         /* Wind speed at d, taking as the mean wind speed inside a stand */
         ud = uh * exp(-gamma * (1 - d / canopy_height_o));
-
-        /* Reynold's number */
-        // Re=(ud*lw/sigma)/nu_lower;
-        Re = (ud * 0.1) / nu_lower;
-
-        /* Nusselt number */
-        Nu = 1.0 * pow(Re, 0.5);
-
+        
         /* leaf boundary resistance */
+        Nu = cal_Nu(ud, nu_lower);
         rb_o = min(40, 0.5 * 0.1 / (alfaw * Nu));
 
-        uf = ustar;
-        *rm = ram;
+        // uf = ustar;
+        *ra_o = ram;
         *G_o_a = 1 / ram;
         *G_o_b = 1 / rb_o;
 
@@ -123,27 +120,19 @@ void aerodynamic_conductance(double canopy_height_o, double canopy_height_u, dou
 
         // wind speed at the zero displacement of canopy
         un_d = uh * exp(-gamma * (1 - canopy_height_u * 0.8 / canopy_height_o));
-        // wind speed at the zero displacement of canopy
-        un_t = uh * exp(-gamma * (1 - canopy_height_u / canopy_height_o));
-
-        /* Reynold's number */
-        // Re=(ud*lw/sigma)/nu_lower;
-        Re = (un_d * 0.1) / nu_lower;
-
-        /* Nusselt number */
-        Nu = 1.0 * pow(Re, 0.5);
+        // // wind speed at the zero displacement of canopy
+        // un_t = uh * exp(-gamma * (1 - canopy_height_u / canopy_height_o));
 
         /* leaf boundary resistance */
-        rb_u = 0.5 * 0.1 / (alfaw * Nu);
-        rb_u = min(40, rb_u);
+        Nu = cal_Nu(un_d, nu_lower);
+        rb_u = min(40, 0.5 * 0.1 / (alfaw * Nu));
         *G_u_b = 1.0 / rb_u;
 
         *ra_u = canopy_height_o / (gamma * kh_o) * (exp(gamma * (1 - canopy_height_u / canopy_height_o)) - 1);
         *G_u_a = 1 / (ram + *ra_u);
 
         gamma = 4.0;
-        kh_u = kh_o * exp(-gamma * (1 - canopy_height_u / canopy_height_o));
-
+        // kh_u = kh_o * exp(-gamma * (1 - canopy_height_u / canopy_height_o));
         *ra_g = canopy_height_o / (gamma * kh_o) *
                 (exp(gamma * (1 - 0 / canopy_height_o)) - exp(gamma * (1 - canopy_height_u / canopy_height_o)));
         *ra_g = *ra_g + *ra_u + ram;

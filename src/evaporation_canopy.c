@@ -19,10 +19,10 @@
 /// @param Gwater   aerodynamic conductance of water (snow)
 /// @param lai      leaf area index (from leaf area index module)
 
-/// @param percent_water_o   percentage of overstorey covered by water
-/// @param percent_water_u   percentage of understorey covered by water
-/// @param percent_snow_o    percentage of overstorey covered by snow
-/// @param percent_snow_u    percentage of understorey covered by snow
+/// @param perc_water_o   percentage of overstorey covered by water
+/// @param perc_water_u   percentage of understorey covered by water
+/// @param perc_snow_o    percentage of overstorey covered by snow
+/// @param perc_snow_u    percentage of understorey covered by snow
 ///
 /// @param evapo_water_o     evaporation of water from overstorey
 /// @param evapo_water_u     evaporation of water from understorey
@@ -32,7 +32,7 @@
 void evaporation_canopy(
     Leaf tempL, double temp_air, double rh_air,
     Leaf Gwater, Leaf lai,
-    double percent_water_o, double percent_water_u, double percent_snow_o, double percent_snow_u,
+    double perc_water_o, double perc_water_u, double perc_snow_o, double perc_snow_u,
     double* evapo_water_o, double* evapo_water_u, double* evapo_snow_o, double* evapo_snow_u) {
     Leaf LHw;  // latent heat from leaves W/m2, caused by evaporation of intercepted rain
     Leaf LHs;  // latent heat from leaves W/m2, caused by evaporation of intercepted snow
@@ -51,17 +51,17 @@ void evaporation_canopy(
     latent_snow = 2.83 * 1000000;
 
     // leaf level latent heat caused by evaporation or sublimation
-    LHw.o_sunlit = percent_water_o * (vpd_air + slope_vapor_air * (tempL.o_sunlit - temp_air)) * density_air * cp_air * Gwater.o_sunlit / psy_air;
-    LHw.o_shaded = percent_water_o * (vpd_air + slope_vapor_air * (tempL.o_shaded - temp_air)) * density_air * cp_air * Gwater.o_shaded / psy_air;
+    LHw.o_sunlit = perc_water_o * (vpd_air + slope_vapor_air * (tempL.o_sunlit - temp_air)) * density_air * cp_air * Gwater.o_sunlit / psy_air;
+    LHw.o_shaded = perc_water_o * (vpd_air + slope_vapor_air * (tempL.o_shaded - temp_air)) * density_air * cp_air * Gwater.o_shaded / psy_air;
 
-    LHw.u_sunlit = percent_water_u * (vpd_air + slope_vapor_air * (tempL.u_sunlit - temp_air)) * density_air * cp_air * Gwater.u_sunlit / psy_air;
-    LHw.u_shaded = percent_water_u * (vpd_air + slope_vapor_air * (tempL.u_shaded - temp_air)) * density_air * cp_air * Gwater.u_shaded / psy_air;
+    LHw.u_sunlit = perc_water_u * (vpd_air + slope_vapor_air * (tempL.u_sunlit - temp_air)) * density_air * cp_air * Gwater.u_sunlit / psy_air;
+    LHw.u_shaded = perc_water_u * (vpd_air + slope_vapor_air * (tempL.u_shaded - temp_air)) * density_air * cp_air * Gwater.u_shaded / psy_air;
 
-    LHs.o_sunlit = percent_snow_o * (vpd_air + slope_vapor_air * (tempL.o_sunlit - temp_air)) * density_air * cp_air * Gwater.o_sunlit / psy_air;
-    LHs.o_shaded = percent_snow_o * (vpd_air + slope_vapor_air * (tempL.o_shaded - temp_air)) * density_air * cp_air * Gwater.o_shaded / psy_air;
+    LHs.o_sunlit = perc_snow_o * (vpd_air + slope_vapor_air * (tempL.o_sunlit - temp_air)) * density_air * cp_air * Gwater.o_sunlit / psy_air;
+    LHs.o_shaded = perc_snow_o * (vpd_air + slope_vapor_air * (tempL.o_shaded - temp_air)) * density_air * cp_air * Gwater.o_shaded / psy_air;
 
-    LHs.u_sunlit = percent_snow_u * (vpd_air + slope_vapor_air * (tempL.u_sunlit - temp_air)) * density_air * cp_air * Gwater.u_sunlit / psy_air;
-    LHs.u_shaded = percent_snow_u * (vpd_air + slope_vapor_air * (tempL.u_shaded - temp_air)) * density_air * cp_air * Gwater.u_shaded / psy_air;
+    LHs.u_sunlit = perc_snow_u * (vpd_air + slope_vapor_air * (tempL.u_sunlit - temp_air)) * density_air * cp_air * Gwater.u_sunlit / psy_air;
+    LHs.u_shaded = perc_snow_u * (vpd_air + slope_vapor_air * (tempL.u_shaded - temp_air)) * density_air * cp_air * Gwater.u_shaded / psy_air;
 
     /*******************************************/
     *evapo_water_o = 1 / (latent_water) * (LHw.o_sunlit * lai.o_sunlit + LHw.o_shaded * lai.o_shaded);

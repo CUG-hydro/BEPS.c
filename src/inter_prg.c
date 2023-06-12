@@ -79,7 +79,7 @@ void inter_prg_c(int jday, int rstep, double lai, double clumping, double parame
     double ra_o, ra_u, ra_g;      // the aerodynamic resistance of overstory, understory and ground surface   in s/m
 
     double q_ca;  // the actual canopy stomatal resistance  --in s/m
-    double radiation_o, radiation_u, radiation_g;
+    double Rn_o, Rn_u, Rn_g;
 
     // double ip = 0;  // the cumulative infiltration at the time of ponding   --in m/s
     // double Inf = 0;
@@ -102,8 +102,8 @@ void inter_prg_c(int jday, int rstep, double lai, double clumping, double parame
     Leaf Gh;   // total conductance for heat transfer from the leaf surface to the reference height above the canopy
     Leaf Ac;   // net photosynthesis rate
 
-    Leaf radiation;  // net radiation of leaves
-    Leaf R;          // Rabs, absorbed solar radiation
+    Leaf Rn_Leaf;  // net radiation of leaves
+    Leaf Rns_Leaf;          // Rabs, absorbed solar radiation
     Leaf leleaf;     // leaf latent heat flux (mol m-2 s-1)
     Leaf GPP, LAI;
     Leaf PAI;  // PAI = LAI + SAI; // double LAI.o_sunlit, LAI.o_shaded, LAI.u_sunlit, LAI.u_shaded;
@@ -309,8 +309,8 @@ void inter_prg_c(int jday, int rstep, double lai, double clumping, double parame
                          clumping, temp_air, rh_air, alpha_v_sw[kkk], alpha_n_sw[kkk],
                          percentArea_snow_o, percentArea_snow_u,
                          Xg_snow[kkk], alpha_v_o, alpha_n_o, alpha_v_u, alpha_n_u, alpha_v_g, alpha_n_g,
-                         &radiation_o, &radiation_u, &radiation_g,
-                         &radiation, &R);
+                         &Rn_o, &Rn_u, &Rn_g,
+                         &Rn_Leaf, &Rns_Leaf);
 
             /*****  Photosynthesis module by B. Chen  *****/
             // Four components: overstory sunlit and shaded, understory sunlit and shaded
@@ -325,13 +325,13 @@ void inter_prg_c(int jday, int rstep, double lai, double clumping, double parame
             leleaf.u_shaded = Gw.u_shaded * (VPD_air + slope * (Tc_old.u_shaded - temp_air)) * rho_a * Cp_ca / psychrometer;
 
             if (CosZs > 0) {
-                photosynthesis(Tc_old.o_sunlit, R.o_sunlit, e_a10, Gb_o, Vcmax_sunlit, f_soilwater, b_h2o, m_h2o, Ci_old.o_sunlit,
+                photosynthesis(Tc_old.o_sunlit, Rns_Leaf.o_sunlit, e_a10, Gb_o, Vcmax_sunlit, f_soilwater, b_h2o, m_h2o, Ci_old.o_sunlit,
                                temp_air, leleaf.o_sunlit, &Gs_new.o_sunlit, &Ac.o_sunlit, &Ci_new.o_sunlit);
-                photosynthesis(Tc_old.o_shaded, R.o_shaded, e_a10, Gb_o, Vcmax_shaded, f_soilwater, b_h2o, m_h2o, Ci_old.o_shaded,
+                photosynthesis(Tc_old.o_shaded, Rns_Leaf.o_shaded, e_a10, Gb_o, Vcmax_shaded, f_soilwater, b_h2o, m_h2o, Ci_old.o_shaded,
                                temp_air, leleaf.o_shaded, &Gs_new.o_shaded, &Ac.o_shaded, &Ci_new.o_shaded);
-                photosynthesis(Tc_old.u_sunlit, R.u_sunlit, e_a10, Gb_u, Vcmax_sunlit, f_soilwater, b_h2o, m_h2o, Ci_old.u_sunlit,
+                photosynthesis(Tc_old.u_sunlit, Rns_Leaf.u_sunlit, e_a10, Gb_u, Vcmax_sunlit, f_soilwater, b_h2o, m_h2o, Ci_old.u_sunlit,
                                temp_air, leleaf.u_sunlit, &Gs_new.u_sunlit, &Ac.u_sunlit, &Ci_new.u_sunlit);
-                photosynthesis(Tc_old.u_shaded, R.u_shaded, e_a10, Gb_u, Vcmax_shaded, f_soilwater, b_h2o, m_h2o, Ci_old.u_shaded,
+                photosynthesis(Tc_old.u_shaded, Rns_Leaf.u_shaded, e_a10, Gb_u, Vcmax_shaded, f_soilwater, b_h2o, m_h2o, Ci_old.u_shaded,
                                temp_air, leleaf.u_shaded, &Gs_new.u_shaded, &Ac.u_shaded, &Ci_new.u_shaded);
             } else {
                 init_leaf_dbl(&Gs_new, 0.0001);
@@ -376,7 +376,7 @@ void inter_prg_c(int jday, int rstep, double lai, double clumping, double parame
             Leaf_Temperatures(temp_air, slope, psychrometer, VPD_air, Cp_ca,
                               Gw, Gww, Gh,
                               Xcs_o[kkk], Xcl_o[kkk], Xcs_u[kkk], Xcl_u[kkk],
-                              radiation,
+                              Rn_Leaf,
                               &Tc_new);
 
             H_o_sunlit = (Tc_new.o_sunlit - temp_air) * rho_a * Cp_ca * Gh.o_sunlit;
@@ -428,7 +428,7 @@ void inter_prg_c(int jday, int rstep, double lai, double clumping, double parame
         Gheat_g = 1 / ra_g;
         mass_water_g = rho_w * Zp;
 
-        evaporation_soil(temp_grd, Ts0[kkk - 1], rh_air, radiation_g, Gheat_g, &Xg_snow[kkk],
+        evaporation_soil(temp_grd, Ts0[kkk - 1], rh_air, Rn_g, Gheat_g, &Xg_snow[kkk],
                          &Zp, &Zsp, &mass_water_g, &Wg_snow[kkk], rho_snow[kkk], soilp->thetam_prev[0], soilp->fei[0],
                          &Evap_soil[kkk], &Evap_SW[kkk], &Evap_SS[kkk]);
 
@@ -448,7 +448,7 @@ void inter_prg_c(int jday, int rstep, double lai, double clumping, double parame
 
         surface_temperature(temp_air, rh_air, Zsp, Zp,
                             Cs[1][kkk], Cs[0][kkk], Gheat_g, d_soil[1], rho_snow[kkk], Tc_u[kkk],
-                            radiation_g, Evap_soil[kkk], Evap_SW[kkk], Evap_SS[kkk],
+                            Rn_g, Evap_soil[kkk], Evap_SW[kkk], Evap_SS[kkk],
                             lambda[1], Xg_snow[kkk], G[1][kkk],
                             Ts0[kkk - 1], Tm[1][kkk - 1], Tm[0][kkk - 1], Tsn0[kkk - 1],
                             Tsm0[kkk - 1], Tsn1[kkk - 1], Tsn2[kkk - 1],
@@ -529,7 +529,7 @@ void inter_prg_c(int jday, int rstep, double lai, double clumping, double parame
     var_n[19] = Wcs_u[kkk];    // the mass of intercepted liquid water and snow, overstory
     var_n[20] = Wg_snow[kkk];  // the fraction of ground surface covered by snow and snow mass
 
-    mid_res->Net_Rad = radiation_o + radiation_u + radiation_g;
+    mid_res->Net_Rad = Rn_o + Rn_u + Rn_g;
     mid_res->gpp_o_sunlit = GPP.o_sunlit;  // umol C/m2/s
     mid_res->gpp_u_sunlit = GPP.u_sunlit;
     mid_res->gpp_o_shaded = GPP.o_shaded;

@@ -5,6 +5,11 @@
 
 #include "beps.h"
 
+double cal_Rl(double emiss, double T) {
+    double sb_constant = 5.67 / 100000000;  // stephen-boltzman constant
+    return emiss * sb_constant * pow(T + 273.15, 4);
+}
+
 /// @brief Function to calculate net radiation at canopy level and leaf level
 /// @details [input] global solar radiation,
 ///                  cosine value for solar zenith angle, albedo of leaves
@@ -14,7 +19,7 @@
 ///                  temperature of air (C), relative humidity (0-100)
 /// @details [output] net radiation for canopy, overstorey, understorey and ground;
 ///                   net radiation on sunlit, shaded leaves of overstorey and understorey.
-/// @param  shortRad_global           global short radiation
+/// @param  Rs_global           global short radiation
 /// @param  CosZs                     cosine value of solar zenith angle
 /// @param  temp_o                    temperature of overstorey
 /// @param  temp_u                    temperature of understory
@@ -39,45 +44,43 @@
 /// @param  albedo_v_g                albedo of ground, visible
 /// @param  albedo_n_g                albedo of ground, near infrared
 ///
-/// @param  netRad_o                  net radiation on overstorey
-/// @param  netRad_u                  net radiation on understorey
-/// @param  netRad_g                  net radiation on ground
-/// @param  netRadLeaf                net radiation at the leaf level, for ET calculation
-/// @param  netShortRadLeaf           net shortwave radiation at leaf level, for GPP calculation
+/// @param  Rn_o                  net radiation on overstorey
+/// @param  Rn_u                  net radiation on understorey
+/// @param  Rn_g                  net radiation on ground
+/// @param  Rn_Leaf                net radiation at the leaf level, for ET calculation
+/// @param  Rns_Leaf           net shortwave radiation at leaf level, for GPP calculation
 /// @return void
-void netRadiation(double shortRad_global, double CosZs, double temp_o, double temp_u, double temp_g,
+void netRadiation(double Rs_global, double CosZs, double temp_o, double temp_u, double temp_g,
                   double lai_o, double lai_u, double lai_os, double lai_us,  // LAI of overstorey and understorey, with and without stem
                                                                              //   double lai_o_sunlit, double lai_o_shaded, double lai_u_sunlit, double lai_u_shaded,
                   Leaf lai,
                   double clumping, double temp_air, double rh,
                   double albedo_snow_v, double albedo_snow_n, double percentArea_snow_o, double percentArea_snow_u, double percent_snow_g,
                   double albedo_v_o, double albedo_n_o, double albedo_v_u, double albedo_n_u, double albedo_v_g, double albedo_n_g,
-                  double* netRad_o, double* netRad_u, double* netRad_g,
-                  Leaf* netRadLeaf,
-                  Leaf* netShortRadLeaf
-                  //   double* netRadLeaf.o_sunlit, double* netRadLeaf.o_shaded, double* netRadLeaf.u_sunlit, double* netRadLeaf.u_shaded,
-                  //   double* netShortRadLeaf.o_sunlit, double* netShortRadLeaf.o_shaded, double* netShortRadLeaf.u_sunlit, double* nenetShortRadLeaf.u_shaded
+                  double* Rn_o, double* Rn_u, double* Rn_g,
+                  Leaf* Rn_Leaf,
+                  Leaf* Rns_Leaf
+                  //   double* Rn_Leaf.o_sunlit, double* Rn_Leaf.o_shaded, double* Rn_Leaf.u_sunlit, double* Rn_Leaf.u_shaded,
+                  //   double* Rns_Leaf.o_sunlit, double* Rns_Leaf.o_shaded, double* Rns_Leaf.u_sunlit, double* neRns_Leaf.u_shaded
 ) {
-    double netShortRad_o, netShortRad_u, netShortRad_g;                                                                    // net short wave radiation on overstorey, understorey and ground
-    double netShortRad_o_dir, netShortRad_o_df, netShortRad_u_dir, netShortRad_u_df, netShortRad_g_dir, netShortRad_g_df;  // direct and diffuse part of net solar radiation
-    double shortRad_dir, shortRad_df;                                                                                      // direct and diffuse radiation on top of the canopy
-    Leaf netLongRadLeaf;
-    // double netLongRadLeaf.o_sunlit, netLongRadLeaf.o_shaded, netLongRadLeaf.u_sunlit, netLongRadLeaf.u_shaded;
+    double Rns_o, Rns_u, Rns_g;                                            // net short wave radiation on overstorey, understorey and ground
+    double Rns_o_dir, Rns_o_df, Rns_u_dir, Rns_u_df, Rns_g_dir, Rns_g_df;  // direct and diffuse part of net solar radiation
+    double Rs_dir, Rs_df;                                                  // direct and diffuse radiation on top of the canopy
+    Leaf Rnl_Leaf;
+    // double Rnl_Leaf.o_sunlit, Rnl_Leaf.o_shaded, Rnl_Leaf.u_sunlit, Rnl_Leaf.u_shaded;
 
-    double netLongRad_o, netLongRad_u, netLongRad_g;  // net long wave radiation
-    double shortRadLeaf_o_dir, shortRadLeaf_u_dir, shortRadLeaf_o_df, shortRadLeaf_u_df;
+    double Rnl_o, Rnl_u, Rnl_g;  // net long wave radiation
+    double Rs_o_dir, Rs_u_dir, Rs_o_df, Rs_u_df;
     double albedo_o, albedo_u, albedo_g;                                                  // albedo of overstorey, understorey and ground (considering snow)
     double albedo_v_os, albedo_n_os, albedo_v_us, albedo_n_us, albedo_v_gs, albedo_n_gs;  // albedo of three parts in visible and NIR band, (considering snow)
 
     double e_actual;               // saturated and actual water vapor potential
-    double meteo_pack_output[10];  // used to get actual vapor pressure
+    double emiss_air, emiss_o, emiss_u, emiss_g;  // emissivity of air, overstorey, understorey and ground
+    double Rl_air, Rl_o, Rl_u, Rl_g;              // long wave radiation emitted by different part
 
-    double emissivity_air, emissivity_o, emissivity_u, emissivity_g;  // emissivity of air, overstorey, understorey and ground
-    double longRad_air, longRad_o, longRad_u, longRad_g;              // long wave radiation emitted by different part
-    double sb_constant = 5.67 / 100000000;                            // stephen-boltzman constant
-    double gap_o_dir, gap_u_dir, gap_o_df, gap_u_df;                  // gap fraction of direct and diffuse radiation for overstorey and understorey (diffuse used for diffuse solar radiation and longwave radiation)
-    double gap_os_df, gap_us_df;                                      // like above, considering stem
-    double ratio_cloud;                                               // a simple ratio to differentiate diffuse and direct radiation
+    double gap_o_dir, gap_u_dir, gap_o_df, gap_u_df;  // gap fraction of direct and diffuse radiation for overstorey and understorey (diffuse used for diffuse solar radiation and longwave radiation)
+    double gap_os_df, gap_us_df;                      // like above, considering stem
+    double ratio_cloud;                               // a simple ratio to differentiate diffuse and direct radiation
 
     // calculate albedo of canopy in this step
     albedo_v_os = albedo_v_o * (1 - percentArea_snow_o) + albedo_snow_v * percentArea_snow_o;  // visible, overstory
@@ -97,17 +100,15 @@ void netRadiation(double shortRad_global, double CosZs, double temp_o, double te
     if (CosZs < 0.001)  // solar zenith angle small, all diffuse radiation
         ratio_cloud = 0;
     else
-        ratio_cloud = shortRad_global / (1367 * CosZs);  // Luo2018, A4
+        ratio_cloud = Rs_global / (1367 * CosZs);  // Luo2018, A4
 
     if (ratio_cloud > 0.8)
-        shortRad_df = 0.13 * shortRad_global;  // Luo2018, A2
+        Rs_df = 0.13 * Rs_global;  // Luo2018, A2
     else
-        shortRad_df = (0.943 + 0.734 * ratio_cloud - 4.9 * pow((ratio_cloud), 2) + 1.796 * pow((ratio_cloud), 3) + 2.058 * pow((ratio_cloud), 4)) * shortRad_global;  // Luo2018, A2
+        Rs_df = (0.943 + 0.734 * ratio_cloud - 4.9 * pow((ratio_cloud), 2) + 1.796 * pow((ratio_cloud), 3) + 2.058 * pow((ratio_cloud), 4)) * Rs_global;  // Luo2018, A2
 
-    shortRad_df = min(shortRad_df, shortRad_global);
-    shortRad_df = max(shortRad_df, 0);
-
-    shortRad_dir = shortRad_global - shortRad_df;  // Luo2018, A3
+    Rs_df = clamp(Rs_df, 0, Rs_global);
+    Rs_dir = Rs_global - Rs_df;  // Luo2018, A3
 
     // fraction at each layer of canopy, direct and diffuse. use Leaf only lai here
     gap_o_dir = exp(-0.5 * clumping * lai_o / CosZs);
@@ -115,7 +116,6 @@ void netRadiation(double shortRad_global, double CosZs, double temp_o, double te
 
     // double gap_os_dir = exp(-0.5 * clumping * lai_os / CosZs);  // considering stem
     // double gap_us_dir = exp(-0.5 * clumping * lai_us / CosZs);
-
     // indicators to describe leaf distribution angles in canopy. slightly related with LAI
     double cosQ_o = 0.537 + 0.025 * lai_o;  // Luo2018, A10, a representative zenith angle for diffuse radiation transmission
     double cosQ_u = 0.537 + 0.025 * lai_u;
@@ -126,163 +126,130 @@ void netRadiation(double shortRad_global, double CosZs, double temp_o, double te
     gap_os_df = exp(-0.5 * clumping * lai_os / cosQ_o);  // considering stem
     gap_us_df = exp(-0.5 * clumping * lai_us / cosQ_u);
 
-    // emissivity of each part
-    meteo_pack(temp_air, rh, meteo_pack_output);
-    e_actual = meteo_pack_output[7];
+    e_actual = cal_ea(temp_air, rh);
 
-    emissivity_air = 1 - exp(-(pow(e_actual * 10.0, (temp_air + 273.15) / 1200.0)));
-    emissivity_air = min(1, emissivity_air);
-    emissivity_air = max(0.7, emissivity_air);
+    emiss_air = 1 - exp(-(pow(e_actual * 10.0, (temp_air + 273.15) / 1200.0)));
+    emiss_air = clamp(emiss_air, 0.7, 1.0);
 
-    emissivity_o = 0.98;
-    emissivity_u = 0.98;
-    emissivity_g = 0.96;
+    emiss_o = 0.98;
+    emiss_u = 0.98;
+    emiss_g = 0.96;
 
     // net short direct radiation on canopy and ground
-    if (shortRad_global > zero && CosZs > zero)  // only happens in day time, when sun is out
+    if (Rs_global > zero && CosZs > zero)  // only happens in day time, when sun is out
     {
-        // Rns_dir_under = shortRad_dir * gap_o_dir * (1 - albedo_u); // from o->u
-        netShortRad_o_dir = shortRad_dir * ((1 - albedo_o) - (1 - albedo_u) * gap_o_dir);  // dir into dif_under
-        netShortRad_u_dir = shortRad_dir * gap_o_dir * ((1 - albedo_u) - (1 - albedo_g) * gap_u_dir);
-        netShortRad_g_dir = shortRad_dir * gap_o_dir * gap_u_dir * (1 - albedo_g);
+        // Rns_dir_under = Rs_dir * gap_o_dir * (1 - albedo_u); // from o->u
+        Rns_o_dir = Rs_dir * ((1 - albedo_o) - (1 - albedo_u) * gap_o_dir);  // dir into dif_under
+        Rns_u_dir = Rs_dir * gap_o_dir * ((1 - albedo_u) - (1 - albedo_g) * gap_u_dir);
+        Rns_g_dir = Rs_dir * gap_o_dir * gap_u_dir * (1 - albedo_g);
     } else {
-        netShortRad_o_dir = 0;
-        netShortRad_u_dir = 0;
-        netShortRad_g_dir = 0;
+        Rns_o_dir = 0;
+        Rns_u_dir = 0;
+        Rns_g_dir = 0;
     }
 
     // net short diffuse radiation on canopy and ground
-    if (shortRad_global > zero && CosZs > zero)  // only happens in day time, when sun is out
+    if (Rs_global > zero && CosZs > zero)  // only happens in day time, when sun is out
     {
-        netShortRad_o_df = shortRad_df * ((1 - albedo_o) - (1 - albedo_u) * gap_o_df) +
-                           0.21 * clumping * shortRad_dir * (1.1 - 0.1 * lai_o) * exp(-CosZs);  // A8
-        netShortRad_u_df = shortRad_df * gap_o_df * ((1 - albedo_u) - (1 - albedo_g) * gap_u_df) +
-                           0.21 * clumping * shortRad_dir * gap_o_dir * (1.1 - 0.1 * lai_u) * exp(-CosZs);  // A9
-        netShortRad_g_df = shortRad_df * gap_o_df * gap_u_df * (1 - albedo_g);
+        Rns_o_df = Rs_df * ((1 - albedo_o) - (1 - albedo_u) * gap_o_df) +
+                   0.21 * clumping * Rs_dir * (1.1 - 0.1 * lai_o) * exp(-CosZs);  // A8
+        Rns_u_df = Rs_df * gap_o_df * ((1 - albedo_u) - (1 - albedo_g) * gap_u_df) +
+                   0.21 * clumping * Rs_dir * gap_o_dir * (1.1 - 0.1 * lai_u) * exp(-CosZs);  // A9
+        Rns_g_df = Rs_df * gap_o_df * gap_u_df * (1 - albedo_g);
     } else {
-        netShortRad_o_df = 0;
-        netShortRad_u_df = 0;
-        netShortRad_g_df = 0;
+        Rns_o_df = 0;
+        Rns_u_df = 0;
+        Rns_g_df = 0;
     }
 
     // total net shortwave radiation at canopy level
-    netShortRad_o = netShortRad_o_dir + netShortRad_o_df;
-    netShortRad_u = netShortRad_u_dir + netShortRad_u_df;
-    netShortRad_g = netShortRad_g_dir + netShortRad_g_df;
+    Rns_o = Rns_o_dir + Rns_o_df;
+    Rns_u = Rns_u_dir + Rns_u_df;
+    Rns_g = Rns_g_dir + Rns_g_df;
 
     // net long wave radiation on canopy and ground
-    longRad_air = emissivity_air * sb_constant * pow((temp_air + 273.15), 4);
-    longRad_o = emissivity_o * sb_constant * pow((temp_o + 273.15), 4);
-    longRad_u = emissivity_u * sb_constant * pow((temp_u + 273.15), 4);
-    longRad_g = emissivity_g * sb_constant * pow((temp_g + 273.15), 4);
+    Rl_air = cal_Rl(emiss_air, temp_air);
+    Rl_o = cal_Rl(emiss_o, temp_o);
+    Rl_u = cal_Rl(emiss_u, temp_u);
+    Rl_g = cal_Rl(emiss_g, temp_g);
 
-    netLongRad_o = (emissivity_o * (longRad_air + longRad_u * (1 - gap_u_df) + longRad_g * gap_u_df) - 2 * longRad_o) *
-                       (1 - gap_o_df) +
-                   emissivity_o * (1 - emissivity_u) * (1 - gap_u_df) * (longRad_air * gap_o_df + longRad_o * (1 - gap_o_df));
+    Rnl_o = (emiss_o * (Rl_air + Rl_u * (1 - gap_u_df) + Rl_g * gap_u_df) - 2 * Rl_o) *
+                (1 - gap_o_df) +
+            emiss_o * (1 - emiss_u) * (1 - gap_u_df) * (Rl_air * gap_o_df + Rl_o * (1 - gap_o_df));
 
-    netLongRad_u = (emissivity_u * (longRad_air * gap_o_df + longRad_o * (1 - gap_o_df) + longRad_g) - 2 * longRad_u) * (1 - gap_u_df) +
-                   (1 - emissivity_g) * ((longRad_air * gap_o_df + longRad_o * (1 - gap_o_df)) * gap_u_df + longRad_u * (1 - gap_u_df)) +
-                   emissivity_u * (1 - emissivity_o) * (longRad_u * (1 - gap_u_df) + longRad_g * gap_u_df) * (1 - gap_o_df);
+    Rnl_u = (emiss_u * (Rl_air * gap_o_df + Rl_o * (1 - gap_o_df) + Rl_g) - 2 * Rl_u) * (1 - gap_u_df) +
+            (1 - emiss_g) * ((Rl_air * gap_o_df + Rl_o * (1 - gap_o_df)) * gap_u_df + Rl_u * (1 - gap_u_df)) +
+            emiss_u * (1 - emiss_o) * (Rl_u * (1 - gap_u_df) + Rl_g * gap_u_df) * (1 - gap_o_df);
 
-    netLongRad_g = emissivity_g * ((longRad_air * gap_o_df + longRad_o * (1 - gap_o_df)) * gap_u_df + longRad_u * (1 - gap_u_df)) -
-                   longRad_g + (1 - emissivity_u) * longRad_g * (1 - gap_u_df);
+    Rnl_g = emiss_g * ((Rl_air * gap_o_df + Rl_o * (1 - gap_o_df)) * gap_u_df + Rl_u * (1 - gap_u_df)) -
+            Rl_g + (1 - emiss_u) * Rl_g * (1 - gap_u_df);
 
     // total net radiation for overstorey, understorey and ground.
-    *netRad_o = netShortRad_o + netLongRad_o;
-    *netRad_u = netShortRad_u + netLongRad_u;
-    *netRad_g = netShortRad_g + netLongRad_g;
+    *Rn_o = Rns_o + Rnl_o;
+    *Rn_u = Rns_u + Rnl_u;
+    *Rn_g = Rns_g + Rnl_g;
 
     // leaf level net radiation updated way
     // reference Chen 2012 clumping index paper
-
-    if (shortRad_global > zero && CosZs > zero)  // only happens in day time, when sun is out
+    if (Rs_global > zero && CosZs > zero)  // only happens in day time, when sun is out
     {
-        shortRadLeaf_o_dir = 0.5 * shortRad_dir / CosZs;
-        shortRadLeaf_o_dir = min(shortRadLeaf_o_dir, 0.7 * 1362);
-        shortRadLeaf_u_dir = shortRadLeaf_o_dir;
+        Rs_o_dir = 0.5 * Rs_dir / CosZs;
+        Rs_o_dir = min(Rs_o_dir, 0.7 * 1362);
+        Rs_u_dir = Rs_o_dir;
 
-        shortRadLeaf_o_df = (shortRad_df - shortRad_df * gap_os_df) / lai_os + 0.07 * shortRad_dir * (1.1 - 0.1 * lai_os) * exp(-CosZs);
-        shortRadLeaf_u_df = (shortRad_df * gap_o_df - shortRad_df * gap_o_df * gap_us_df) / lai_us  // pay attention to the type of gap fraction used here
-                            + 0.05 * shortRad_dir * gap_o_dir * (1.1 - 0.1 * lai_us) * exp(-CosZs);
+        Rs_o_df = (Rs_df - Rs_df * gap_os_df) / lai_os + 0.07 * Rs_dir * (1.1 - 0.1 * lai_os) * exp(-CosZs);
+        Rs_u_df = (Rs_df * gap_o_df - Rs_df * gap_o_df * gap_us_df) / lai_us  // pay attention to the type of gap fraction used here
+                  + 0.05 * Rs_dir * gap_o_dir * (1.1 - 0.1 * lai_us) * exp(-CosZs);
     } else {
-        shortRadLeaf_o_dir = 0;
-        shortRadLeaf_u_dir = 0;
-        shortRadLeaf_o_df = 0;
-        shortRadLeaf_u_df = 0;
+        Rs_o_dir = 0;
+        Rs_u_dir = 0;
+        Rs_o_df = 0;
+        Rs_u_df = 0;
     }
 
     // overstorey sunlit leaves
-
-    if (lai.o_sunlit > 0) {
-        netShortRadLeaf->o_sunlit = (shortRadLeaf_o_dir + shortRadLeaf_o_df) * (1 - albedo_o);  // diffuse
-        netLongRadLeaf.o_sunlit = netLongRad_o / lai_os;                                        // leaf level net long
-        netRadLeaf->o_sunlit = netShortRadLeaf->o_sunlit + netLongRadLeaf.o_sunlit;
-    } else {
-        netShortRadLeaf->o_sunlit = (shortRadLeaf_o_dir + shortRadLeaf_o_df) * (1 - albedo_o);
-        netLongRadLeaf.o_sunlit = netLongRad_o;
-        netRadLeaf->o_sunlit = netShortRadLeaf->o_sunlit + netLongRadLeaf.o_sunlit;
-    }
+    Rns_Leaf->o_sunlit = (Rs_o_dir + Rs_o_df) * (1 - albedo_o);  // diffuse
+    Rnl_Leaf.o_sunlit = lai.o_sunlit > 0 ? Rnl_o / lai_os : Rnl_o;
 
     // overstorey shaded leaf
-    if (lai.o_shaded > 0) {
-        netShortRadLeaf->o_shaded = shortRadLeaf_o_df * (1 - albedo_o);  // diffuse
-        netLongRadLeaf.o_shaded = netLongRad_o / lai_os;
-
-        netRadLeaf->o_shaded = netShortRadLeaf->o_shaded + netLongRadLeaf.o_shaded;
-    } else {
-        netShortRadLeaf->o_shaded = shortRadLeaf_o_df * (1 - albedo_o);  // diffuse
-        netLongRadLeaf.o_shaded = netLongRad_o;
-        netRadLeaf->o_shaded = netShortRadLeaf->o_shaded + netLongRadLeaf.o_shaded;
-    }
+    Rns_Leaf->o_shaded = Rs_o_df * (1 - albedo_o);  // diffuse
+    Rnl_Leaf.o_shaded = lai.o_shaded > 0 ? Rnl_o / lai_os : Rnl_o;
 
     // understorey sunlit leaf
-    if (lai.u_sunlit > 0) {
-        netShortRadLeaf->u_sunlit = (shortRadLeaf_u_dir + shortRadLeaf_u_df) * (1 - albedo_u);
-        netLongRadLeaf.u_sunlit = netLongRad_u / lai_us;
-
-        netRadLeaf->u_sunlit = netShortRadLeaf->u_sunlit + netLongRadLeaf.u_sunlit;
-    } else {
-        netShortRadLeaf->u_sunlit = (shortRadLeaf_u_dir + shortRadLeaf_u_df) * (1 - albedo_u);
-        netLongRadLeaf.u_sunlit = netLongRad_u;
-
-        netRadLeaf->u_sunlit = netShortRadLeaf->u_sunlit + netLongRadLeaf.u_sunlit;
-    }
+    Rns_Leaf->u_sunlit = (Rs_u_dir + Rs_u_df) * (1 - albedo_u);
+    Rnl_Leaf.u_sunlit = lai.u_sunlit > 0 ? Rnl_u / lai_us : Rnl_u;
 
     // understorey shaded leaf
-    if (lai.u_shaded > 0) {
-        netShortRadLeaf->u_shaded = shortRadLeaf_u_df * (1 - albedo_u);
-        netLongRadLeaf.u_shaded = netLongRad_u / lai_us;
+    Rns_Leaf->u_shaded = Rs_u_df * (1 - albedo_u);
+    Rnl_Leaf.u_shaded = lai.u_shaded > 0 ? Rnl_u / lai_us : Rnl_u;
 
-        netRadLeaf->u_shaded = netShortRadLeaf->u_shaded + netLongRadLeaf.u_shaded;
-    } else {
-        netShortRadLeaf->u_shaded = shortRadLeaf_u_df * (1 - albedo_u);
-        netLongRadLeaf.u_shaded = netLongRad_u;
-
-        netRadLeaf->u_shaded = netShortRadLeaf->u_shaded + netLongRadLeaf.u_shaded;
-    }
-
-    //  leaf level net radiation: original way, use canopy radiation divided by LAI.
-    //  here calculate net radiation for all leaf component again use the original method.
-    //  These code could be commented, because not right, I just put it here to validate model.
-    //    if(lai_o_sunlit>0)
-    //        netRadLeaf->o_sunlit = netShortRad_o_dir/lai_o_sunlit + netLongRad_o/lai_os;
-    //    else
-    //        netRadLeaf->o_sunlit = netShortRad_o_dir + netLongRad_o;
-    //
-    //    if(lai_o_shaded>0)
-    //        netRadLeaf->o_shaded = netShortRad_o_df/lai_o_shaded + netLongRad_o/lai_os;
-    //    else
-    //        netRadLeaf->o_shaded = netShortRad_o_df + netLongRad_o;
-    //
-    //
-    //    if(lai_u_sunlit>0)
-    //        netRadLeaf->u_sunlit = netShortRad_u_dir/lai_u_sunlit + netLongRad_u/lai_us;
-    //    else
-    //        netRadLeaf->u_sunlit = netShortRad_u_dir + netLongRad_u;
-    //
-    //
-    //    if(lai_u_shaded>0)
-    //        netRadLeaf->u_shaded = netShortRad_u_df/lai_u_shaded + netLongRad_u/lai_us;
-    //    else
-    //        netRadLeaf->u_shaded =netShortRad_u_df + netLongRad_u;
+    Rn_Leaf->o_sunlit = Rns_Leaf->o_sunlit + Rnl_Leaf.o_sunlit;
+    Rn_Leaf->o_shaded = Rns_Leaf->o_shaded + Rnl_Leaf.o_shaded;
+    Rn_Leaf->u_sunlit = Rns_Leaf->u_sunlit + Rnl_Leaf.u_sunlit;
+    Rn_Leaf->u_shaded = Rns_Leaf->u_shaded + Rnl_Leaf.u_shaded;
 }
+
+//  leaf level net radiation: original way, use canopy radiation divided by LAI.
+//  here calculate net radiation for all leaf component again use the original method.
+//  These code could be commented, because not right, I just put it here to validate model.
+//    if(lai_o_sunlit>0)
+//        Rn_Leaf->o_sunlit = Rns_o_dir/lai_o_sunlit + Rnl_o/lai_os;
+//    else
+//        Rn_Leaf->o_sunlit = Rns_o_dir + Rnl_o;
+//
+//    if(lai_o_shaded>0)
+//        Rn_Leaf->o_shaded = Rns_o_df/lai_o_shaded + Rnl_o/lai_os;
+//    else
+//        Rn_Leaf->o_shaded = Rns_o_df + Rnl_o;
+//
+//
+//    if(lai_u_sunlit>0)
+//        Rn_Leaf->u_sunlit = Rns_u_dir/lai_u_sunlit + Rnl_u/lai_us;
+//    else
+//        Rn_Leaf->u_sunlit = Rns_u_dir + Rnl_u;
+//
+//
+//    if(lai_u_shaded>0)
+//        Rn_Leaf->u_shaded = Rns_u_df/lai_u_shaded + Rnl_u/lai_us;
+//    else
+//        Rn_Leaf->u_shaded =Rns_u_df + Rnl_u;

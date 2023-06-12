@@ -216,7 +216,15 @@ void rainfall_stage2(double evapo_water_o, double evapo_water_u,
                      double* mass_water_o, double* mass_water_u);
 void rainfall_stage3();
 
+
+double cal_es(double Ta);
+double cal_ea(double Ta, double RH);
+double cal_lambda(double Ta);
+double cal_slope(double Ta);
+double ea2q(double ea);
+
 void meteo_pack(double temp, double rh, double* meteo_pack_output);
+
 
 void surface_temperature(double temp_air, double rh_air, double depth_snow, double depth_water,
                          double capacity_heat_soil1, double capacity_heat_soil0, double Gheat_g,
