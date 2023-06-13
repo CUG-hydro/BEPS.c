@@ -6,6 +6,59 @@
 #include "DB.h"
 #include "beps.h"
 
+/**
+ * @example
+ * findroot(root1, root2, root3, );
+ */
+void findroot(double root1, double root2, double root3,
+              double* aphoto) {
+    double minroot = 0, maxroot = 0, midroot = 0;
+
+    if (root1 <= root2 && root1 <= root3) {
+        minroot = root1;
+        if (root2 <= root3) {
+            midroot = root2;
+            maxroot = root3;
+        } else {
+            midroot = root3;
+            maxroot = root2;
+        }
+    }
+
+    if (root2 <= root1 && root2 <= root3) {
+        minroot = root2;
+        if (root1 <= root3) {
+            midroot = root1;
+            maxroot = root3;
+        } else {
+            midroot = root3;
+            maxroot = root1;
+        }
+    }
+
+    if (root3 <= root1 && root3 <= root2) {
+        minroot = root3;
+        if (root1 < root2) {
+            midroot = root1;
+            maxroot = root2;
+        } else {
+            midroot = root2;
+            maxroot = root1;
+        }
+    }
+
+    *aphoto = 0.;
+    // find out where roots plop down relative to the x-y axis
+    if (minroot > 0 && midroot > 0 && maxroot > 0)
+        *aphoto = minroot;
+
+    if (minroot < 0 && midroot < 0 && maxroot > 0)
+        *aphoto = maxroot;
+
+    if (minroot < 0 && midroot > 0 && maxroot > 0)
+        *aphoto = midroot;
+};
+
 /* @details
  * Equations are based on Baldocchi 1994 Tree Physiology paper
  * also see https://nature.berkeley.edu/biometlab/BiometWeb/leaf_energy_ps.c
@@ -123,18 +176,18 @@
  * @return void
  */
 void photosynthesis(double temp_leaf_p, double Rsn_leaf, double e_air, double g_lb_w, double vc_opt,
-                    double f_soilwater, double b_h2o, double m_h2o, double cii, double T_leaf, double LH_leaf,
+                    double f_soilwater, double b_h2o, double m_h2o, double cii,
+                    double T_leaf, double LH_leaf,
                     double* Gs_w, double* aphoto, double* ci) {
-    double air_pres = 101.325;  // air pressure (kPa)
-    double ca;                  // atmospheric co2 concentration (ppm)
-    double iphoton;             // incident photosynthetic photon flux density (PPFD) umol m-2 s-1
-    double g_lb_c;              // leaf laminar boundary layer condunctance to CO2 (mol m-2 s-1)
-    double rh_leaf;             // relative humidity at leaf surface (0-1)
-    double temp_leaf_K;         // leaf temperature (K)
-    double gs_co2_mole;         // stomatal conductance to CO2 (mol m-2 s-1)
-    double gs_h2o_mole;         // stomatal conductance to h2o (mol m-2 s-1)
-    double bc;                  // temporary variable
-    double cs;                  // CO2 concentration at leaf surface (ppm)
+    double ca;           // atmospheric co2 concentration (ppm)
+    double iphoton;      // incident photosynthetic photon flux density (PPFD) umol m-2 s-1
+    double g_lb_c;       // leaf laminar boundary layer condunctance to CO2 (mol m-2 s-1)
+    double rh_leaf;      // relative humidity at leaf surface (0-1)
+    double temp_leaf_K;  // leaf temperature (K)
+    double gs_co2_mole;  // stomatal conductance to CO2 (mol m-2 s-1)
+    double gs_h2o_mole;  // stomatal conductance to h2o (mol m-2 s-1)
+    double bc;           // temporary variable
+    double cs;           // CO2 concentration at leaf surface (ppm)
 
     double b_co2;  // the intercept term in BWB model (mol CO2 m-2 s-1): b_h2o/1.6
     double m_co2;  // the slope in BWB model: m_h2o/1.6
@@ -174,7 +227,6 @@ void photosynthesis(double temp_leaf_p, double Rsn_leaf, double e_air, double g_
     double ps_1;
     double delta_1;
     double r3q;
-    double minroot = 0, maxroot = 0, midroot = 0;
 
     double tprime25;
 
@@ -182,28 +234,29 @@ void photosynthesis(double temp_leaf_p, double Rsn_leaf, double e_air, double g_
     iphoton = 4.55 * 0.5 * Rsn_leaf;
 
     if (2 * iphoton < 1)
-        iphoton = 0;
+        iphoton = 0.;
 
     temp_leaf_K = T_leaf + 273.13;
 
-    fact.latent = LAMBDA(temp_leaf_p);
-    bound_layer_res.vapor = 1.0 / g_lb_w;
+    double fact_latent = LAMBDA(temp_leaf_p);
+    double bound_vapor = 1.0 / g_lb_w;
 
-    //	g_lb_c = (g_lb_w/1.6)*air_pres/(temp_leaf_K*rugc); // (mol m-2 s-1)
+    // double air_pres = 101.325;  // air pressure (kPa)
+    // g_lb_c = (g_lb_w / 1.6) * air_pres / (temp_leaf_K * rugc);  // (mol m-2 s-1)
 
-    met.press_bars = 1.013;
-    met.pstat273 = 0.022624 / (273.16 * met.press_bars);
+    double press_bars = 1.013;
+    double pstat273 = 0.022624 / (273.16 * press_bars);
 
-    met.T_Kelvin = T_leaf + 273.13;
-    met.rhova_g = e_air * 2165 / met.T_Kelvin;  // absolute humidity, g m-3
-    met.rhova_kg = met.rhova_g / 1000.;         // absolute humidity, kg m-3
+    double T_Kelvin = T_leaf + 273.13;
+    double rhova_g = e_air * 2165. / T_Kelvin;  // absolute humidity, g m-3
+    double rhova_kg = rhova_g / 1000.;          // absolute humidity, kg m-3
 
-    g_lb_c = 1. / (1.0 / g_lb_w * 1.6 * temp_leaf_K * (met.pstat273));
+    g_lb_c = 1. / (1.0 / g_lb_w * 1.6 * temp_leaf_K * (pstat273));
 
     m_co2 = m_h2o / 1.6;
     b_co2 = b_h2o / 1.6;
 
-    rh_leaf = SFC_VPD(temp_leaf_K, LH_leaf);
+    rh_leaf = SFC_VPD(temp_leaf_K, LH_leaf, fact_latent, bound_vapor, rhova_kg);
 
     tprime25 = temp_leaf_K - tk_25;  // temperature difference
 
@@ -216,7 +269,6 @@ void photosynthesis(double temp_leaf_p, double Rsn_leaf, double e_air, double g_
 
     /* if(iphoton < 1)
            iphoton = 0;*/
-
     gammac = 0.5 * o2 / tau * 1000.0;  // umol mol-1
 
     resp_ld25 = vc_opt * 0.004657;
@@ -242,7 +294,6 @@ void photosynthesis(double temp_leaf_p, double Rsn_leaf, double e_air, double g_
      * Gs from Ball-Berry is for water vapor.  It must be divided
      * by the ratio of the molecular diffusivities to be valid for A
      */
-
     alpha_ps = 1.0 + (b_co2 / g_lb_c) - m_co2 * rh_leaf * f_soilwater;
     beta_ps = ca * (g_lb_c * m_co2 * rh_leaf * f_soilwater - 2.0 * b_co2 - g_lb_c);
     gamma_ps = ca * ca * g_lb_c * b_co2;
@@ -254,7 +305,6 @@ void photosynthesis(double temp_leaf_p, double Rsn_leaf, double e_air, double g_
      * W = (a ci - ad)/(e ci + b)
      *
      * after the minimum is chosen set a, b, e and d for the cubic solution.
-     *
      * estimate of J according to Farquhar and von Cammerer (1981)
      */
     /*if (jmax > 0)
@@ -320,52 +370,8 @@ void photosynthesis(double temp_leaf_p, double Rsn_leaf, double e_air, double g_
 
     // Here A = x - p / 3, allowing the cubic expression to be expressed
     // as: x^3 + ax + b = 0
-
     // rank roots #1, #2 and #3 according to the minimum, intermediate and maximum value
-    if (root1 <= root2 && root1 <= root3) {
-        minroot = root1;
-        if (root2 <= root3) {
-            midroot = root2;
-            maxroot = root3;
-        } else {
-            midroot = root3;
-            maxroot = root2;
-        }
-    }
-
-    if (root2 <= root1 && root2 <= root3) {
-        minroot = root2;
-        if (root1 <= root3) {
-            midroot = root1;
-            maxroot = root3;
-        } else {
-            midroot = root3;
-            maxroot = root1;
-        }
-    }
-
-    if (root3 <= root1 && root3 <= root2) {
-        minroot = root3;
-        if (root1 < root2) {
-            midroot = root1;
-            maxroot = root2;
-        } else {
-            midroot = root2;
-            maxroot = root1;
-        }
-    }
-
-    *aphoto = 0;
-    // find out where roots plop down relative to the x-y axis
-
-    if (minroot > 0 && midroot > 0 && maxroot > 0)
-        *aphoto = minroot;
-
-    if (minroot < 0 && midroot < 0 && maxroot > 0)
-        *aphoto = maxroot;
-
-    if (minroot < 0 && midroot > 0 && maxroot > 0)
-        *aphoto = midroot;
+    findroot(root1, root2, root3, aphoto);
 
     // also test for sucrose limitation of photosynthesis, as suggested by
     // Collatz.  Js=Vmax/2
@@ -381,7 +387,6 @@ void photosynthesis(double temp_leaf_p, double Rsn_leaf, double e_air, double g_
 
     // if A < 0 then gs should go to cuticular value and recalculate A
     // using quadratic solution
-
     if (*aphoto <= 0.0)
         goto quad;
     else
@@ -411,7 +416,6 @@ quad:
     Cquad = a_ps * ps_1 - a_ps * d_ps * denom - e_ps * resp_ld * ps_1 - resp_ld * b_ps * denom;
 
     product = Bquad * Bquad - 4.0 * Aquad * Cquad;
-
     if (product >= 0)
         //	*aphoto = (-Bquad + sqrt(product)) / (2.0 * Aquad);
         *aphoto = (-Bquad - sqrt(product)) / (2.0 * Aquad);
@@ -425,7 +429,7 @@ OUTDAT:
     gs_co2_mole = gs_h2o_mole / 1.6;
 
     *ci = cs - *aphoto / gs_co2_mole;
-    *Gs_w = gs_h2o_mole * temp_leaf_K * (met.pstat273);  // m s-1
+    *Gs_w = gs_h2o_mole * temp_leaf_K * (pstat273);  // m s-1
 
     return;
 }
@@ -437,13 +441,13 @@ OUTDAT:
 /// @param temp_leaf_K  leaf temporary temperature in Kalvin
 /// @param leleafpt     leaf latent heat
 /// @return [rhum_leaf] humidity at leaf surface
-/// @return double
-double SFC_VPD(double temp_leaf_K, double leleafpt) {
+double SFC_VPD(double temp_leaf_K, double leleafpt,
+               double fact_latent, double bound_vapor, double rhova_kg) {
     double y, rhov_sfc, e_sfc, vpd_sfc, rhum_leaf;
     double es_leaf;  // saturation vapor pressure at leaf temperature.
 
     es_leaf = ES(temp_leaf_K);
-    rhov_sfc = (leleafpt / (fact.latent)) * bound_layer_res.vapor + met.rhova_kg; /* kg m-3 */
+    rhov_sfc = (leleafpt / (fact_latent)) * bound_vapor + rhova_kg; /* kg m-3 */
 
     e_sfc = rhov_sfc * temp_leaf_K / .2165;  // mb
     vpd_sfc = es_leaf - e_sfc;               // mb
@@ -490,9 +494,10 @@ double ES(double t) {
     if (t > 0) {
         y1 = (54.8781919 - 6790.4985 / t - 5.02808 * log(t));
         y = exp(y1);
-    } else
+    } else {
         printf("bad es calc");
-
+        y = 0.;
+    }
     return y;
 }
 

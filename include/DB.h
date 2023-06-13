@@ -44,7 +44,9 @@ void TBOLTZdouble();
 double TEMP_FUNC();
 double TBOLTZ();
 void photosynthesis();
-double SFC_VPD();
+// double SFC_VPD();
+double SFC_VPD(double temp_leaf_K, double leleafpt,
+               double fact_latent, double bound_vapor, double rhova_kg);
 double ES();
 double LAMBDA();
 
