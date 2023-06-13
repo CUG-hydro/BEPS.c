@@ -38,9 +38,8 @@ void UpdateSoilMoisture(struct Soil p[], double kstep)
     // the maximum Infiltration. Reference? The inf should be changing very fast during a precipitation because thetam is changing. LHE.
     Inf_max=p->f_ice[0] * p->Ksat[0] * ( 1 + (p->fei[0] - p->thetam_prev[0]) / p->d_soil[0] * p->psi_sat[0] * p->b[0] / p->fei[0]);
 
-    Inf = max(p->f_ice[0] * (p->Zp / kstep + p->r_rain_g), 0); // This should be unnecessary since tmp >=0; LHE.
-    Inf=min(Inf_max,Inf);
-    Inf=max(0,Inf);  // This should be unnecessary since Inf_max >=0; LHE.
+    Inf = max(p->f_ice[0] * (p->Zp / kstep + p->r_rain_g), 0);  // This should be unnecessary since tmp >=0; LHE.
+    Inf = clamp(Inf, 0, Inf_max);  // This should be unnecessary since Inf_max >=0; LHE.
 
     p->Zp = (p->Zp / kstep + p->r_rain_g - Inf) * kstep * p->r_drainage; // Ponded water after runoff. This one is related to runoff. LHe.
 
@@ -60,8 +59,8 @@ void UpdateSoilMoisture(struct Soil p[], double kstep)
             else { // the lowest p->n_layer
                 double d1;
                 d1 = (p->thetam[i] - p->thetab[i-1]) * 2.0 / p->d_soil[i];
-                d1=max(d1,0);
-                p->thetab[i] = p->thetam[i] + d1*p->d_soil[i] / 2.0;
+                d1 = max(d1, 0);
+                p->thetab[i] = p->thetam[i] + d1 * p->d_soil[i] / 2.0;
                 p->thetab[i] = min(p->thetab[i], p->fei[i]);
             }
 
@@ -107,14 +106,12 @@ void UpdateSoilMoisture(struct Soil p[], double kstep)
         // Fb, flow speed. Dancy's law. LHE.
         for(i=0;i <= p->n_layer - 1; i++)
         {
-            if(i < p->n_layer - 1)
-            {
-                p->r_waterflow[i] = p->KK[i] * (2*(p->psim[i+1] - p->psim[i]) / (p->d_soil[i] + p->d_soil[i+1])+1); /* downwards, positive*/
+            if (i < p->n_layer - 1) {
+                p->r_waterflow[i] = p->KK[i] * (2 * (p->psim[i + 1] - p->psim[i]) / (p->d_soil[i] + p->d_soil[i + 1]) + 1); /* downwards, positive*/
                 // +1 accounts for gravitational drainage. LHE
-            }
-            else
-                //p->r_waterflow[i] = p->km[i] * (0+1); // Seller's 1996. Eq. 37. simplified.
-                p->r_waterflow[i] = 0; // from Ju.
+            } else
+                // p->r_waterflow[i] = p->km[i] * (0+1); // Seller's 1996. Eq. 37. simplified.
+                p->r_waterflow[i] = 0;  // from Ju.
         }
 
 
@@ -125,12 +122,12 @@ void UpdateSoilMoisture(struct Soil p[], double kstep)
             if(fabs(p->r_waterflow[i]) > max_Fb) max_Fb = fabs(p->r_waterflow[i]); // find max_Fb for all p->LAYERSs.
         }
 
-
-        if(max_Fb > 1.0e-5)
-            this_step = 1.0; // determinte the sub-step according to order of Fb empirically .
-        else if(max_Fb > 1.0e-6)
+        if (max_Fb > 1.0e-5)
+            this_step = 1.0;  // determinte the sub-step according to order of Fb empirically .
+        else if (max_Fb > 1.0e-6)
             this_step = 30.0;
-        else this_step = 360.0;
+        else
+            this_step = 360.0;
 
         total_t = total_t + this_step;
         if(total_t > kstep) this_step = this_step - (total_t - kstep);
@@ -144,19 +141,15 @@ void UpdateSoilMoisture(struct Soil p[], double kstep)
                 p->thetam[i] = p->thetam[i] + (p->r_waterflow[i-1] * this_step - p->r_waterflow[i] * this_step - p->Ett[i] * this_step) / p->d_soil[i];	// kstep->this_step
 
             /*  thetam[i][kkk]=max(theta_vwp[i]*0.25,thetam[i][kkk]); */
-            p->thetam[i] = max(p->theta_vwp[i], p->thetam[i]);
-            p->thetam[i] = min(p->fei[i],p->thetam[i]);
+            p->thetam[i] = clamp(p->thetam[i], p->theta_vwp[i], p->fei[i]);
         }
 
     } // end of while: the self-adaption step. by LHE.
 
-
-    for(i=0;i<p->n_layer;i++)
-    {  // ref?
+    for (i = 0; i < p->n_layer; i++) {  // ref?
         p->ice_ratio[i] = p->ice_ratio[i] * p->thetam_prev[i] / p->thetam[i];
         p->ice_ratio[i] = min(1.0, p->ice_ratio[i]);
     }
-
 }
 
 
@@ -166,19 +159,17 @@ void UpdateSoilMoisture(struct Soil p[], double kstep)
 /// @param Trans_u    transpiration from understory canopies
 /// @param Evap_soil  evaporation from soil
 /// @return void
-void Soil_Water_Uptake(struct Soil p[], double Trans_o, double Trans_u, double Evap_soil)
-{
+void Soil_Water_Uptake(struct Soil p[], double Trans_o, double Trans_u, double Evap_soil) {
     int i;
     double rho_w = 1025.0;
-    double Source;
+    double Trans;
 
-    Source = Trans_o + Trans_u;
+    Trans = Trans_o + Trans_u;
 
     // for the top layer
-    p->Ett[0] = Source / rho_w * p->dt[0] + Evap_soil / rho_w;
+    p->Ett[0] = Trans / rho_w * p->dt[0] + Evap_soil / rho_w;
 
     // for each layer:
     for (i = 1; i < p->n_layer; i++)
-        p->Ett[i] = Source / rho_w * p->dt[i];
+        p->Ett[i] = Trans / rho_w * p->dt[i];
 }
-
