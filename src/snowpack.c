@@ -70,9 +70,10 @@ void snowpack_stage1(double temp_air, double precipitation,double mass_snow_o_la
     areaMax_snow_o=lai_o*0.01;
     areaMax_snow_u=lai_u*0.01;
 
-    mass_snow_o_last=*mass_snow_o;
-    mass_snow_u_last=*mass_snow_u;
-    mass_snow_g_last=*mass_snow_g;
+    // previous mass_snow 
+    // mass_snow_o_last=*mass_snow_o;
+    // mass_snow_u_last=*mass_snow_u;
+    // mass_snow_g_last=*mass_snow_g;
 
     /*****************************/
 
