@@ -153,7 +153,7 @@ void snowpack_stage1(double temp_air, double precipitation,double mass_snow_o_la
         *density_snow=(*density_snow-250)*exp(-0.001*length_step/3600.0) + 250.0;
 
     if (*mass_snow_g > 0)
-        *depth_snow=*mass_snow_g/(*density_snow);
+        *depth_snow=min(*mass_snow_g/(*density_snow), 100);
     else
         *depth_snow=0;
 
