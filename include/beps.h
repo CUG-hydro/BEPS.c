@@ -18,7 +18,7 @@
 #define NOERROR 0
 #define ERROR 1
 #define PI 3.1415926
-#define zero 0.0000000001
+#define zero 0.0
 
 // #define max(a,b) 	(a>b)?a:b         // used for UNIX
 // #define min(a,b)	(a<b)?a:b	      // used for UNIX

@@ -480,7 +480,7 @@ double LAMBDA(double tak) {
 
     // add heat of fusion for melting ice
     if (tak < 273.)
-        y += 333;
+        y += 333000;
 
     return y;
 }

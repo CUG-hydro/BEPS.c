@@ -82,6 +82,8 @@ void snowpack_stage1(double temp_air, double precipitation,double mass_snow_o_la
     else
         snowrate=precipitation*density_water/density_new_snow;
 
+    snowrate_o = 0.0;
+
     if (temp_air<0) // if there is snow
     {
         //overstorey
@@ -153,7 +155,7 @@ void snowpack_stage1(double temp_air, double precipitation,double mass_snow_o_la
         *density_snow=(*density_snow-250)*exp(-0.001*length_step/3600.0) + 250.0;
 
     if (*mass_snow_g > 0)
-        *depth_snow=min(*mass_snow_g/(*density_snow), 100);
+        *depth_snow=min(*mass_snow_g/(*density_snow), 10.0);
     else
         *depth_snow=0;
 
@@ -271,7 +273,7 @@ void snowpack_stage3(double temp_air, double temp_snow, double temp_snow_last, d
         if (temp_snow<=0 && temp_snow_last >0 && *depth_water>0) //freezing
         {
             mass_water_frozen=(0-temp_snow)*cp_ice*density_snow*depth_snow_sup/latent_fusion;
-            mass_water_frozen=max(mass_water_frozen,*depth_water*density_water);
+            mass_water_frozen=min(mass_water_frozen,*depth_water*density_water);
         }
         else
             mass_water_frozen=0;
@@ -291,7 +293,7 @@ void snowpack_stage3(double temp_air, double temp_snow, double temp_snow_last, d
         if (temp_snow<=0 && temp_snow_last >0 && *depth_water>0) //freezing
         {
             mass_water_frozen=(0-temp_snow)*cp_ice*density_snow*depth_snow_sup*0.02/latent_fusion;
-            mass_water_frozen=max(mass_water_frozen,*depth_water*density_water);
+            mass_water_frozen=min(mass_water_frozen,*depth_water*density_water);
         }
         else
             mass_water_frozen=0;
