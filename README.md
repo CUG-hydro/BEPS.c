@@ -14,10 +14,11 @@ procedure to prescribe soil carbon pools for estimating autotrophic respiration
 
 > 2024-10-13
 
-- [x] the unit of `lambda_ice` is error, `333 J/kg` should be `333000 J/kg`.
+- [x] `LAMBDA` function in the photosynthesis module, the unit of `lambda_ice`
+  is error, `333 J/kg` should be `333000 J/kg`.
 - [x] snowpack_stage1:
   + `snowrate_o`未被初始化，导致`snowrate_o > 0`为`true`.
-  + 雪深最大设置为10m，防止不合理的不断累积：`*depth_snow=min(*mass_snow_g/(*density_snow), 10.0);`
+  + 雪深最大设置为`10m`，防止不合理的不断累积：`*depth_snow=min(*mass_snow_g/(*density_snow), 10.0);`
 - [x] snowpack_stage3: 
   `max(mass_water_frozen,*depth_water*density_water)`, `max` should be `min`
 
