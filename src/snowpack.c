@@ -247,6 +247,12 @@ void snowpack_stage3(double temp_air, double temp_snow, double temp_snow_last, d
     //simulate snow melt and freeze process
     mass_snow_melt=0;
     mass_water_frozen=0;
+
+    // bool con_melt = temp_snow > 0 && temp_snow_last <= 0 && mass_snow_sup > 0;
+    // bool con_froze = temp_snow <= 0 && temp_snow_last > 0 && *depth_water > 0;
+    bool con_melt = temp_snow > 0 && mass_snow_sup > 0;
+    bool con_froze = temp_snow <= 0 && *depth_water > 0;
+
     // case 1 depth of snow <0.02 m
     if (depth_snow_sup<=0.02)
     {
@@ -262,40 +268,32 @@ void snowpack_stage3(double temp_air, double temp_snow, double temp_snow_last, d
         //case 2 depth of snow > 0.02 < 0.05 m
     else if (depth_snow_sup > 0.02 && depth_snow_sup <=0.05)
     {
-        if (temp_snow>0 && temp_snow_last<0 && mass_snow_sup > 0) // melting
-        {
+        if (con_melt) {
             mass_snow_melt=temp_snow*cp_ice*density_snow*depth_snow_sup/latent_fusion;
             mass_snow_melt=min(mass_snow_sup, mass_snow_melt); // the amount of melted snow could not be larger than supply
-        }
-        else
+        } else
             mass_snow_melt=0;
 
-        if (temp_snow<=0 && temp_snow_last >0 && *depth_water>0) //freezing
-        {
+        if (con_froze) {
             mass_water_frozen=(0-temp_snow)*cp_ice*density_snow*depth_snow_sup/latent_fusion;
             mass_water_frozen=min(mass_water_frozen,*depth_water*density_water);
-        }
-        else
+        } else
             mass_water_frozen=0;
     }
 
         // case 3 depth of snow > 0.05 m
     else if(depth_snow_sup>0.05)
     {
-        if (temp_snow>0 && temp_snow_last<=0 && mass_snow_sup > 0) // melting
-        {
+        if (con_melt) {
             mass_snow_melt=temp_snow*cp_ice*density_snow*depth_snow_sup*0.02/latent_fusion;
             mass_snow_melt=min(mass_snow_sup, mass_snow_melt); // the amount of melted snow could not be larger than supply
-        }
-        else
+        } else
             mass_snow_melt=0;
 
-        if (temp_snow<=0 && temp_snow_last >0 && *depth_water>0) //freezing
-        {
+        if (con_froze) {
             mass_water_frozen=(0-temp_snow)*cp_ice*density_snow*depth_snow_sup*0.02/latent_fusion;
             mass_water_frozen=min(mass_water_frozen,*depth_water*density_water);
-        }
-        else
+        } else
             mass_water_frozen=0;
     }
 
