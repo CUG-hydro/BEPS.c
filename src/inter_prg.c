@@ -354,9 +354,9 @@ void inter_prg_c(int jday, int rstep, double lai, double clumping, double parame
             Gs_old.o_shaded = Gs_new.o_shaded;  // m/s
 
             // note error at here, kongdd, v20220705
-            Ci_old.u_sunlit = Ci_new.o_sunlit;
+            Ci_old.u_sunlit = Ci_new.u_sunlit;
             Cs_old.u_sunlit = Cs_new.u_sunlit;
-            Gs_old.u_sunlit = Gs_new.o_sunlit;  // m/s
+            Gs_old.u_sunlit = Gs_new.u_sunlit;  // m/s
 
             Ci_old.u_shaded = Ci_new.u_shaded;
             Cs_old.u_shaded = Cs_new.u_shaded;

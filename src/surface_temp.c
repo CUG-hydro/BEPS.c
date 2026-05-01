@@ -110,12 +110,12 @@ void surface_temperature(double temp_air, double rh_air, double depth_snow, doub
 
         *temp_snow = clamp(*temp_snow, temp_air - 25, temp_air + 25);
 
-        ttt = (lambda_soil1 * temp_soil1_last / depth_soil1 + (*temp_snow) * lambda_snow + 0.02 * capacity_heat_soil1 / length_step * temp_any0_last) /
-              (lambda_soil1 / depth_soil1 + lambda_snow / depth_snow + 0.02 * capacity_heat_soil1 / length_step);
+        ttt = (lambda_soil1 * temp_soil1_last / (0.5 * depth_soil1) + (*temp_snow) * lambda_snow / depth_snow + 0.02 * capacity_heat_soil1 / length_step * temp_any0_last) /
+              (lambda_soil1 / (0.5 * depth_soil1) + lambda_snow / depth_snow + 0.02 * capacity_heat_soil1 / length_step);
         *temp_any0 = (*temp_soil0) * (1 - percent_snow_g) + ttt * percent_snow_g;
 
         heat_flux_snow = lambda_snow / (depth_snow + 0.5 * depth_soil1) * ((*temp_snow) - temp_soil1_last);
-        heat_flux_soil = heat_flux_snow * ((*temp_any0) - temp_soil1_last) / depth_soil1;
+        heat_flux_soil = lambda_soil1 * ((*temp_any0) - temp_soil1_last) / (0.5 * depth_soil1);
 
         *heat_flux = heat_flux_snow * percent_snow_g + heat_flux_soil * (1 - percent_snow_g);
         *heat_flux = clamp(*heat_flux, -100, 100);
