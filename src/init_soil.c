@@ -66,11 +66,11 @@ void Init_Soil_Parameters(int landcover, int stxt, double r_root_decay, struct S
     p->density_soil[3] = 1517.0;
     p->density_soil[4] = 1517.0;
 
-    p->f_org[0] = 5;
-    p->f_org[1] = 2;
-    p->f_org[2] = 1;
-    p->f_org[3] = 1;
-    p->f_org[4] = 0.3;
+    p->f_org[0] = 5/100; // fix the unit of f_org, v20260502
+    p->f_org[1] = 2/100;
+    p->f_org[2] = 1/100;
+    p->f_org[3] = 1/100;
+    p->f_org[4] = 0.3/100;
 
     switch (stxt)
     {
@@ -215,7 +215,7 @@ void Init_Soil_Status(struct Soil p[], double Tsoil, double Tair, double Ms, dou
     double d_t = clamp(Tsoil - Tair, -5.0, 5.0);
     // if (d_t>5.0)  d_t = 5.0;
     // if (d_t<-5.0) d_t = -5.0;
-    
+
     p->Zp = 0.0; /* depth of ponded water on the surface*/
     p->Zsp = snowdepth; /*Snow depth;*/
     p->r_rain_g = 0.0;  /*the rainfall rate, un--on understory g--on ground surface  m/s */
