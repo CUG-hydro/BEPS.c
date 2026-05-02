@@ -3,21 +3,110 @@ name: C/C++ CI
 on:
   push:
     branches: [ "master" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
 
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux-x86_64
+            os: ubuntu-latest
+            lib_src: libbeps.so
+            lib_dst: libbeps-linux-x86_64.so
+            exe_src: beps
+            exe_dst: beps-linux-x86_64
+          - platform: macos-x86_64
+            os: macos-15-intel
+            lib_src: libbeps.dylib
+            lib_dst: libbeps-macos-x86_64.dylib
+            exe_src: beps
+            exe_dst: beps-macos-x86_64
+          - platform: macos-arm64
+            os: macos-15
+            lib_src: libbeps.dylib
+            lib_dst: libbeps-macos-arm64.dylib
+            exe_src: beps
+            exe_dst: beps-macos-arm64
+          - platform: windows-x86_64
+            os: windows-latest
+            lib_src: libbeps.dll
+            lib_dst: libbeps-windows-x86_64.dll
+            exe_src: beps.exe
+            exe_dst: beps-windows-x86_64.exe
 
     steps:
-    - uses: actions/checkout@v3
-    #- name: configure
-    #  run: ./configure
-    - name: make
-      run: make
+      - uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: make mingw-w64-x86_64-gcc
+
+      - name: Build
+        if: runner.os != 'Windows'
+        shell: bash
+        run: make clean strip
+
+      - name: Build
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: make clean strip
+
+      - name: Package
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp "${{ matrix.lib_src }}" "dist/${{ matrix.lib_dst }}"
+          cp "${{ matrix.exe_src }}" "dist/${{ matrix.exe_dst }}"
+
+      - name: Package
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          mkdir -p dist
+          cp "${{ matrix.lib_src }}" "dist/${{ matrix.lib_dst }}"
+          cp "${{ matrix.exe_src }}" "dist/${{ matrix.exe_dst }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: beps-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
     #- name: make check
     #  run: make check
     #- name: make distcheck
     #  run: make distcheck
+
+  release:
+    name: Publish release assets
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
