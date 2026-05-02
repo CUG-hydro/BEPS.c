@@ -73,7 +73,7 @@ jobs:
           mkdir -p dist
           cp "${{ matrix.lib_src }}" "dist/${{ matrix.lib_dst }}"
           cp "${{ matrix.exe_src }}" "dist/${{ matrix.exe_dst }}"
-          tar -czf "dist/${{ matrix.platform }}.tar.gz" -C dist "${{ matrix.lib_dst }}"
+          tar -czf "dist/beps-${{ matrix.platform }}.tar.gz" -C dist "${{ matrix.lib_dst }}"
 
       - name: Package
         if: runner.os == 'Windows'
@@ -82,7 +82,7 @@ jobs:
           mkdir -p dist
           cp "${{ matrix.lib_src }}" "dist/${{ matrix.lib_dst }}"
           cp "${{ matrix.exe_src }}" "dist/${{ matrix.exe_dst }}"
-          tar -czf "dist/${{ matrix.platform }}.tar.gz" -C dist "${{ matrix.lib_dst }}"
+          tar -czf "dist/beps-${{ matrix.platform }}.tar.gz" -C dist "${{ matrix.lib_dst }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
